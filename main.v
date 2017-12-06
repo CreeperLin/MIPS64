@@ -20,12 +20,11 @@
 */
 
 `include "ram.v"
-parameter REG_SZ = 64;
-parameter REG_NUM = 32;
-parameter BUF_W = 64;
-parameter BUF_L = 16;
+
 /*Components*/
 module Buffer(we, re, din, dout);
+parameter BUF_W = 64;
+parameter BUF_L = 16;
 input we,re;
 input[BUF_W-1:0] din;
 output[BUF_W-1:0] dout;
@@ -45,6 +44,8 @@ end
 endmodule
 
 module REG(idx, we, din, dout);
+parameter REG_SZ = 64;
+parameter REG_NUM = 32;
 input[6:0] idx;
 input we;
 input[REG_SZ-1:0] din;
@@ -58,13 +59,40 @@ end
 endmodule
 
 /*IF*/
-module IF(mem, addr, inst);
-
+module IF(pc, addr, datain, inst);
+parameter INST_L = 32;
+parameter PC_L = 32;
+parameter MADDR_L = 32;
+input[PC_L-1:0] pc;
+input datain;
+reg [MADDR_L-1:0] addr;
+output[INST_L-1:0] inst;
+integer i;
+always @(pc) begin
+    addr = pc[MADDR_L-1:0];
+    for(i=0;i<32;i=i+1) begin
+        inst[i] = datain;
+        addr = addr + 1;
+        //#1;
+    end
+end
 endmodule
 
 /*ID*/
-module ID(inst, rs, rd, rt, immd);
-
+module ID(inst, op, rs, rd, rt, immd);
+input[31:0] inst;
+output[5:0] op;
+output[4:0] rs,rd,rt;
+output[15:0] immd;
+wire[5:0] shamt;
+wire[5:0] funct;
+assign op = inst[31:26];
+assign rs = inst[25:21];
+assign rd = inst[20:16];
+assign rt = inst[15:11];
+assign immd = inst[15:0];
+assign shamt = inst[10:6];
+assign funct = inst[5:0]
 endmodule
 
 /*EX*/
