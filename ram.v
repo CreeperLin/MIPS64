@@ -1,29 +1,41 @@
-/* Random Access Memory
+/* Random Access dataory
     * Features:
         * Clock driven? [x]
 */
-
-module RAM(addr, datain, we, dataout);
-//parameter ROW_SZ = 16;
-//parameter COL_SZ = 16;
-parameter MADDR_SZ = 32;
-input[MADDR_SZ-1:0] addr;
-input we;
-input[7:0] datain;
-output[7:0] dataout;
-//reg[2**COL_SZ-1:0] mem[2**ROW_SZ-1:0];
-reg[7:0] mem[2**MADDR_SZ-1:0];
-//wire[ROW_SZ-1:0] ras;
-//wire[COL_SZ-1:0] cas;
-//assign ras = addr[MADDR_SZ-1:COL_SZ];
-//assign cas = addr[COL_SZ-1:0];
-//assign dataout = mem[ras][cas];
-assign dataout = mem[addr];
+module ram 
+#(
+    parameter MADDR_SZ = 32,
+    parameter MEM_SZ = 2**25
+)
+(
+    input clk, rst,
+    input[7:0] datain,
+    output[7:0] dataout,
+    input[MADDR_SZ-1:0] raddr,
+    input[MADDR_SZ-1:0] waddr,
+    input re,we
+);
+reg[7:0] data[MEM_SZ-1:0];
+assign dataout = data[raddr];
 always @(posedge we) begin
-    mem[addr] = datain;
+    $display("MEM Write: addr:%x, data:%x",waddr,datain);
+    data[waddr] = datain;
+end
+//always @(posedge re) begin
+    //dataout = data[raddr];
+    //$display("MEM Read: addr:%x, data:%x",raddr,dataout);
+//end
+initial begin
+    $readmemh("./test/test.dat", data);
+    $display("0x00: %h", data[8'h00]);
+    $display("0x01: %h", data[8'h01]);
+end
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+
+    end else begin
+
+    end
 end
 
-initial begin
-    $readmemb("test.rom",mem,0,2**20);
-end
 endmodule

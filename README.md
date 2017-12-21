@@ -1,2 +1,2 @@
-# MIPS64
-MIPS64 architecture in Verilog
+# RISCV32 
+RISC-V32 ISA in Verilog
