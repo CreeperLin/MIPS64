@@ -14,6 +14,8 @@ module pipeID
     input down_ack,
 
     input[31:0] inst,
+    input[31:0] pc_in,
+    output[31:0] pc_out,
     output reg reg_re,
     output reg[4:0] reg_idx,
     input[REG_SZ-1:0] reg_in,
@@ -21,11 +23,14 @@ module pipeID
 
     output[6:0] op,
     output reg[ALUOP_L-1:0] alu_op,
+    output reg alu_c,
     output[4:0] rd,
     output reg signed[REG_SZ-1:0] opr1,opr2,val,
     //output reg signed[31:0] imm,
-    output reg re, we,
-    output reg[1:0] rlen, wlen
+    output jp_e, br_e, wb_e,
+    //output reg wb_e,
+    output reg[1:0] rw_e,
+    output reg[1:0] rw_len
 );
 wire[4:0] shamt;
 wire[6:0] funct7;
@@ -44,15 +49,19 @@ assign rs2 = inst[24:20];
 assign shamt = inst[10:6];
 assign funct7 = inst[31:25];
 assign funct3 = inst[14:12];
+assign pc_out = pc_in;
 
+assign wb_e = !(op==`OP_STORE || op==`OP_SYSTEM); 
+assign jp_e = (op==`OP_JAL) || (op==`OP_JALR);
+assign br_e = (op==`OP_BRANCH);
 task fetch_reg;
 input[4:0] idx;
-output[REG_SZ-1:0] dout;
+output reg[REG_SZ-1:0] dout;
 begin
     reg_idx = idx;
     reg_re = 1;
-    dout = reg_in;
     reg_re = #1 0;
+    dout = reg_in;
 end
 endtask
 always @(posedge clk or posedge rst) begin
@@ -62,6 +71,10 @@ always @(posedge clk or posedge rst) begin
         opr1 <= 0;
         opr2 <= 0;
         val <=0;
+        //wb_e <= 0;
+        rw_e <= 0;
+        rw_len <= 0;
+        alu_c <= 0;
     end else begin
 
     end
@@ -73,19 +86,31 @@ always @(posedge up_syn) begin
     //reg_re = 1;
     //opr1 = reg_in;
     //reg_re = 0;
+    rw_e = 0;
     case (op)
-        `OP_LUI, `OP_AUIPC: begin
-            opr2=imm_U;
+        `OP_LUI:begin
+            alu_op = `ALU_PASS;
+            opr1 = imm_U;
+            opr2 = 0;
+        end
+        `OP_AUIPC: begin
+            alu_op = `ALU_ADD;
+            opr1 = pc_in;
+            opr2 = imm_U;
         end
         `OP_JAL: begin
+            alu_op = `ALU_ADD;
             opr1 = imm_J;
-            opr2 = 4;
-            val = imm_J;
+            opr2 = pc_in;
+            //val = pc_in + 4;
+            val = 32'h4;
         end
         `OP_JALR: begin
+            alu_op = `ALU_ADD;
             fetch_reg(rs1,opr1);
-            opr2=imm_I;
-            val = 4;
+            opr2 = imm_I;
+            //val = pc_in + 4;
+            val = 32'h4;
         end
         `OP_OP_IMM: begin
             fetch_reg(rs1,opr1);
@@ -104,11 +129,30 @@ always @(posedge up_syn) begin
         end
         `OP_LOAD: begin
             fetch_reg(rs1,opr1);
+            //re = 1;
             opr2=imm_I;
+            alu_op = `ALU_ADD;
             case (funct3)
-                `FUNCT3_LB,`FUNCT3_LBU: rlen = 2'b00;
-                `FUNCT3_LH,`FUNCT3_LHU: rlen = 2'b01;
-                `FUNCT3_LW: rlen = 2'b11;
+                `FUNCT3_LB: begin
+                    rw_len = 2'b00;
+                    rw_e = 2'b10;
+                end
+                `FUNCT3_LBU: begin
+                    rw_len = 2'b00;
+                    rw_e = 2'b11;
+                end
+                `FUNCT3_LH: begin
+                    rw_len = 2'b01;
+                    rw_e = 2'b10;
+                end
+                `FUNCT3_LHU: begin
+                    rw_len = 2'b01;
+                    rw_e = 2'b11;
+                end
+                `FUNCT3_LW: begin
+                    rw_len = 2'b11;
+                    rw_e = 2'b10;
+                end
             endcase
         end
         `OP_BRANCH: begin
@@ -116,7 +160,12 @@ always @(posedge up_syn) begin
             fetch_reg(rs2,opr2);
             val=imm_B;
             case (funct3)
-                `FUNCT3_BEQ, `FUNCT3_BNE: alu_op = `ALU_SEQ;
+                `FUNCT3_BEQ:
+                    alu_op = `ALU_SEQ;
+                `FUNCT3_BNE: begin
+                    alu_op = `ALU_SEQ;
+                    alu_c = 1'b1;
+                end
                 `FUNCT3_BLT: alu_op = `ALU_SLT;
                 `FUNCT3_BLTU: alu_op = `ALU_SLTU;
             endcase
@@ -125,10 +174,12 @@ always @(posedge up_syn) begin
             fetch_reg(rs1,opr1);
             fetch_reg(rs2,val);
             opr2=imm_S;
+            alu_op = `ALU_ADD;
+            rw_e = 2'b01;
             case (funct3)
-                `FUNCT3_SB: wlen = 2'b00;
-                `FUNCT3_SH: wlen = 2'b01;
-                `FUNCT3_SW: wlen = 2'b11;
+                `FUNCT3_SB: rw_len = 2'b00;
+                `FUNCT3_SH: rw_len = 2'b01;
+                `FUNCT3_SW: rw_len = 2'b11;
             endcase
         end
         `OP_OP: begin
@@ -150,9 +201,13 @@ always @(posedge up_syn) begin
             endcase
         end
         `OP_MISC_MEM: opr2=0;
+        `OP_SYSTEM: begin
+            alu_op = `ALU_PASS;
+            $display("ID:syscall N/A");
+        end
         default: $display("ID: unknown op:%b",op);
     endcase
-    $display("ID: op:%b f3:%b f7:%b rd:%d rs1:%d rs2:%d opr1:%d opr2:%d",op,funct3,funct7,rd,rs1,rs2,opr1,opr2);
+    $display("ID: op:%b f3:%b f7:%b rd:%d rs1:%d rs2:%d opr1:%d opr2:%d val:%d alu_op:%d",op,funct3,funct7,rd,rs1,rs2,opr1,opr2,val,alu_op);
     #1;
     down_syn = 1;
 end

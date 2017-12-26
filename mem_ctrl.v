@@ -26,5 +26,5 @@ assign m_raddr = c_raddr;
 assign m_waddr = c_waddr;
 assign c_dout = m_din;
 assign m_re = c_re;
-assign m_we = m_we;
+assign m_we = c_we;
 endmodule

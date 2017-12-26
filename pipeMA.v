@@ -1,3 +1,4 @@
+`include "def.v"
 module pipeMA
 #(
     parameter MADDR_L = 32,
@@ -10,22 +11,22 @@ module pipeMA
     output reg down_syn,
     input down_ack,
 
-    input re, we,
-    input[1:0] rlen, wlen,
+    input[1:0] rw_e,
+    input[1:0] rw_len,
     input[4:0] rd,
-    input[MADDR_L-1:0] ex_ans,
-    input[DATA_L-1:0] ex_din,
-    input[DATA_L-1:0] mem_in,
-    output reg[DATA_L-1:0] mem_out,
-    output reg[MADDR_L-1:0] m_raddr,m_waddr,
+    input[`M_ADDR_L] ex_ans,
+    input[`C_DATA_L] ex_din,
+    input[`C_DATA_L] mem_in,
+    output reg[`C_DATA_L] mem_out,
+    output reg[`M_ADDR_L] m_raddr,m_waddr,
     output reg co_re, co_we,
     output reg[1:0] co_rlen, co_wlen,
     input ex_wb_e,
     output wb_e,
     output[4:0] wb_idx,
-    output reg[DATA_L-1:0] wb_out
+    output reg[`C_DATA_L] wb_out
 );
-assign wb_e = re | ex_wb_e;
+assign wb_e = ex_wb_e;
 assign wb_idx = rd;
 //assign co_re = re;
 //assign co_we = we;
@@ -50,22 +51,37 @@ always @(posedge up_syn) begin
     #1;
     up_ack = 1;
     #5;
-    if (re) begin
-        co_rlen = rlen;
+    case (rw_e)
+    2'b10: begin
+        co_rlen = rw_len;
         m_raddr = ex_ans;
         co_re = 1;
+        co_re = #5 0; 
         wb_out = mem_in;
-        co_re = 0; 
-    end else if (we) begin
-        co_wlen = wlen;
+        $display("MA:Read m_raddr:%x mem_in:%d",m_raddr,mem_in);
+    end
+    2'b11: begin
+        co_rlen = rw_len;
+        m_raddr = ex_ans;
+        co_re = 1;
+        co_re = #5 0;
+        wb_out = {mem_in[31:16],16'b0};
+        $display("MA:ReadUpper m_raddr:%x mem_in:%d wb_out:%d",m_raddr,mem_in,wb_out);
+    end
+    2'b01: begin
+        co_wlen = rw_len;
         m_waddr = ex_ans;
         co_we = 1;
         mem_out = ex_din;
-        co_we = 0;
-    end else begin
-        wb_out = ex_ans;
+        co_we = #5 0;
+        $display("MA:Write m_waddr:%x mem_out:%d",m_waddr,mem_out);
     end
-    $display("MA: m_raddr:%x mem_in:%d m_waddr:%x mem_out:%d",m_raddr,mem_in,m_waddr,mem_out);
+    2'b00: begin
+        wb_out = ex_ans;
+        $display("MA:None");
+    end
+    default: $display("MA:Error");
+    endcase
     down_syn = 1;
 end
 always @(negedge up_syn) begin

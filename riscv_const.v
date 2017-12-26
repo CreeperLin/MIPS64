@@ -12,6 +12,7 @@
 `define OP_OP_IMM   7'b0010011
 `define OP_OP       7'b0110011
 `define OP_MISC_MEM 7'b0001111
+`define OP_SYSTEM   7'b1110011
 
 //================== Instruction funct3 in RISC-V ================== 
 // JALR

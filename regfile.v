@@ -27,18 +27,55 @@ integer t;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         for (t=0;t<32;t=t+1) begin
-            data[t] <= 0;
+            data[t] = 0;
         end
-        dout <= 0;
+        data[2] = 32'h00010000; //sp
+        dout = 0;
     end else begin
     end
 end
 always @(posedge re) begin
-    dout <= data[r_idx];
+    dout = gpr[r_idx];
     $display("REG:Read idx:%d val:%d",r_idx,dout);
 end
 always @(posedge we) begin
-    data[w_idx] <= din;
+    data[w_idx] = din;
     $display("REG:Write idx:%d val:%d",w_idx,din);
+end
+
+initial begin
+    $dumpfile("test.vcd");
+    //$dumpvars(0, data[0]);
+    $dumpvars(0, data[1]);
+    $dumpvars(0, data[2]);
+    $dumpvars(0, data[3]);
+    $dumpvars(0, data[4]);
+    $dumpvars(0, data[5]);
+    $dumpvars(0, data[6]);
+    $dumpvars(0, data[7]);
+    $dumpvars(0, data[8]);
+    $dumpvars(0, data[9]);
+    $dumpvars(0, data[10]);
+    $dumpvars(0, data[11]);
+    $dumpvars(0, data[12]);
+    $dumpvars(0, data[13]);
+    $dumpvars(0, data[14]);
+    $dumpvars(0, data[15]);
+    $dumpvars(0, data[16]);
+    $dumpvars(0, data[17]);
+    $dumpvars(0, data[18]);
+    $dumpvars(0, data[19]);
+    $dumpvars(0, data[20]);
+    $dumpvars(0, data[21]);
+    $dumpvars(0, data[22]);
+    $dumpvars(0, data[23]);
+    $dumpvars(0, data[24]);
+    $dumpvars(0, data[25]);
+    $dumpvars(0, data[26]);
+    $dumpvars(0, data[27]);
+    $dumpvars(0, data[28]);
+    $dumpvars(0, data[29]);
+    $dumpvars(0, data[30]);
+    $dumpvars(0, data[31]);
 end
 endmodule

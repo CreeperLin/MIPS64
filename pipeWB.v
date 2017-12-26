@@ -5,7 +5,8 @@ module pipeWB
     output reg up_ack,
     output reg down_syn,
     input down_ack,
-
+    
+    input wb_e,
     input[31:0] din,
     output reg[31:0] dout,
     input[4:0] idxin,
@@ -29,12 +30,19 @@ end
 always @(posedge up_syn) begin
     #1;
     up_ack = 1;
-    dout = din;
-    idxout = idxin;
-    reg_we = 1;
-    #1;
-    reg_we = 0;
-    $display("WB: idx:%d val:%d",idxout,dout);
+    case (wb_e)
+        1'b1: begin
+            dout = din;
+            idxout = idxin;
+            reg_we = 1;
+            #1;
+            reg_we = 0;
+            $display("WB: idx:%d val:%d\n",idxout,dout);
+        end
+        1'b0: begin
+            $display("WB:None\n");
+        end
+    endcase
     down_syn = 1;
 end
 always @(negedge up_syn) begin

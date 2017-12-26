@@ -1,3 +1,5 @@
+`define ALUOP_L     5-1:0
+
 `define ALU_PASS    0
 `define ALU_ADD     1
 `define ALU_ADDC    2

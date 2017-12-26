@@ -29,7 +29,7 @@ initial begin
     rst = 0;
     //forever #1 clk=!clk;
     //repeat(200) #1 clk=!clk;
-    #200;
+    #1000;
     $finish;
 end
 endmodule

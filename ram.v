@@ -27,8 +27,6 @@ end
 //end
 initial begin
     $readmemh("./test/test.dat", data);
-    $display("0x00: %h", data[8'h00]);
-    $display("0x01: %h", data[8'h01]);
 end
 always @(posedge clk or posedge rst) begin
     if (rst) begin
