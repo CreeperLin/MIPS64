@@ -51,7 +51,7 @@ assign funct7 = inst[31:25];
 assign funct3 = inst[14:12];
 assign pc_out = pc_in;
 
-assign wb_e = !(op==`OP_STORE || op==`OP_SYSTEM); 
+assign wb_e = !(op==`OP_BRANCH || op==`OP_STORE || op==`OP_SYSTEM); 
 assign jp_e = (op==`OP_JAL) || (op==`OP_JALR);
 assign br_e = (op==`OP_BRANCH);
 task fetch_reg;

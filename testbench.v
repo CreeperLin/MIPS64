@@ -29,7 +29,8 @@ initial begin
     rst = 0;
     //forever #1 clk=!clk;
     //repeat(200) #1 clk=!clk;
-    #10000;
-    $finish;
+    //#500000;
+    //$display("CPU TIMEOUT");
+    //$finish;
 end
 endmodule
