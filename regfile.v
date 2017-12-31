@@ -1,3 +1,4 @@
+`define SP_INIT     32'h00010000
 module regfile
 #(
     parameter REG_SZ = 32,
@@ -29,7 +30,7 @@ always @(posedge clk or posedge rst) begin
         for (t=0;t<32;t=t+1) begin
             data[t] = 0;
         end
-        data[2] = 32'h00010000; //sp
+        //data[2] = 32'h00010000; //sp
         dout = 0;
     end else begin
     end

@@ -23,7 +23,8 @@ always @(posedge clk or posedge rst) begin
 end
 always @(posedge run) begin
 case(op)
-    `ALU_PASS:  Y <= (A==0)?B:A;
+    //`ALU_PASS:  Y <= (A==0)?B:A;
+    `ALU_PASS:  Y <= A;
     `ALU_ADD:   Y <= A + B;
     `ALU_ADDC:  Y <= A + B + c;
     `ALU_SUB:   Y <= A - B;
@@ -42,8 +43,8 @@ case(op)
     `ALU_SLR:   Y <= (A << B[4:0]) | (A >> (32 - B[4:0]));
     `ALU_SRR:   Y <= (A >> B[4:0]) | (A << (32 - B[4:0]));
     `ALU_SEQ:   Y <= (A == B) ? ~c : c;
-    `ALU_SLT:   Y <= ($signed(A) < $signed(B)) ? 32'b1 : 32'b0;
-    `ALU_SLTU:  Y <= (A < B) ? 32'b1 : 32'b0;
+    `ALU_SLT:   Y <= ($signed(A) < $signed(B)) ? ~c : c;
+    `ALU_SLTU:  Y <= (A < B) ? ~c : c;
     `ALU_NEG:   Y <= ~A + 1;
     `ALU_NOT:   Y <= ~A;
     `ALU_MULT:  begin

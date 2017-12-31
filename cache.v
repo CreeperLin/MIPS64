@@ -5,10 +5,12 @@ module cache
     parameter ADDR_L = 32 //bit
 )
 (
+    input clk, rst,
     input[8*CACHE_LEN-1:0] datain,
+    output reg[8*CACHE_LEN-1:0] dataout,
     input[ADDR_L-1:0] read_addr,
     input[ADDR_L-1:0] write_addr,
-    output reg[8*CACHE_LEN-1:0] dataout
+    input re, we
 );
 //2-way set associative
 localparam OFS_L = 6;
@@ -32,7 +34,7 @@ reg[FLG_L+TAG_L-1:0] key1;
 reg[FLG_L+TAG_L-1:0] key2;
 reg[CACHE_LEN-1:0] val1;
 reg[CACHE_LEN-1:0] val2;
-always @(read_addr) begin
+always @(re) begin
     key1 <= map1[r_idx];
     key2 <= map2[r_idx];
     val1 <= data1[r_idx];
@@ -41,7 +43,7 @@ always @(read_addr) begin
     dataout = val1;
 end
 
-always @(write_addr) begin
+always @(we) begin
     data1[w_idx] <= datain;
     data2[w_idx] <= datain;
 end

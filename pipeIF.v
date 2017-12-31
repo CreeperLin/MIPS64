@@ -1,6 +1,7 @@
 /*IF*/
 `include "b_predictor.v"
-`define PC_ENTRY 32'h10054
+`define PC_ENTRY 32'h00000000
+`define PC_MAIN 32'h00001000
 module pipeIF
 #(
     parameter INST_L = 32,
@@ -61,8 +62,8 @@ always @(posedge clk or posedge rst) begin
     end
 end
 
-wire[PC_L-1:0] inst_no;
-assign inst_no = (pc-`PC_ENTRY)/4;
+//wire[PC_L-1:0] inst_no;
+//assign inst_no = (pc-`PC_MAIN)/4;
 
 always @(posedge up_syn) begin
     pc = nxpc;
@@ -75,11 +76,13 @@ always @(posedge up_syn) begin
     //pc <= nxpc;
     pc_out = nxpc;
     nxpc = nxpc + 4;
-    $display("IF: read pc: %x(%d) jp_e: %x, inst: %X nxpc: %x",pc,inst_no,jp_e,inst,nxpc);
+    $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
 
     up_ack = 1;
     if (inst!=32'b0) begin
         down_syn = 1;
+    end else begin
+        $stop;
     end
 end
 

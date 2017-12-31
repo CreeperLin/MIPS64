@@ -57,7 +57,12 @@ always @(posedge up_syn) begin
         m_raddr = ex_ans;
         co_re = 1;
         co_re = #5 0; 
-        wb_out = mem_in;
+        case (rw_len)
+            2'b00: wb_out = {{25{mem_in[7]}}, mem_in[6:0]};
+            2'b01: wb_out = {{17{mem_in[15]}}, mem_in[14:0]};
+            2'b11: wb_out = mem_in;
+            default: $display("MA:Error");
+        endcase
         $display("MA:Read m_raddr:%x mem_in:%d",m_raddr,mem_in);
     end
     2'b11: begin
@@ -65,8 +70,14 @@ always @(posedge up_syn) begin
         m_raddr = ex_ans;
         co_re = 1;
         co_re = #5 0;
-        wb_out = {mem_in[31:16],16'b0};
-        $display("MA:ReadUpper m_raddr:%x mem_in:%d wb_out:%d",m_raddr,mem_in,wb_out);
+        wb_out = mem_in;
+        //case (rw_len)
+            //2'b00: wb_out = {24'b0, mem_in[7:0]};
+            //2'b01: wb_out = {16'b0, mem_in[15:0]};
+            //2'b11: wb_out = mem_in;
+            //default: $display("MA:Error");
+        //endcase
+        $display("MA:Read Unsigned m_raddr:%x mem_in:%d wb_out:%d",m_raddr,mem_in,wb_out);
     end
     2'b01: begin
         co_wlen = rw_len;

@@ -41,7 +41,7 @@ assign imm_I = {{21{inst[31]}},inst[30:20]};
 assign imm_S = {{21{inst[31]}},inst[30:25],inst[11:7]};
 assign imm_B = {{20{inst[31]}},inst[7],inst[30:25],inst[11:8],1'b0};
 assign imm_U = {inst[31:12],12'b0};
-assign imm_J = {{11{inst[31]}},inst[19:12],inst[20],inst[30:21],1'b0};
+assign imm_J = {{12{inst[31]}},inst[19:12],inst[20],inst[30:21],1'b0};
 assign op = inst[6:0];
 assign rd = inst[11:7];
 assign rs1 = inst[19:15];
@@ -87,6 +87,7 @@ always @(posedge up_syn) begin
     //opr1 = reg_in;
     //reg_re = 0;
     rw_e = 0;
+    alu_c = 1'b0;
     case (op)
         `OP_LUI:begin
             alu_op = `ALU_PASS;
@@ -153,6 +154,7 @@ always @(posedge up_syn) begin
                     rw_len = 2'b11;
                     rw_e = 2'b10;
                 end
+                default: $display("ERROR ID LOAD");
             endcase
         end
         `OP_BRANCH: begin
@@ -168,6 +170,15 @@ always @(posedge up_syn) begin
                 end
                 `FUNCT3_BLT: alu_op = `ALU_SLT;
                 `FUNCT3_BLTU: alu_op = `ALU_SLTU;
+                `FUNCT3_BGE: begin
+                    alu_op = `ALU_SLT;
+                    alu_c = 1;
+                end
+                `FUNCT3_BGEU: begin
+                    alu_op = `ALU_SLTU;
+                    alu_c = 1;
+                end
+                default: $display("ERROR ID BRANCH");
             endcase
         end
         `OP_STORE: begin
@@ -180,6 +191,7 @@ always @(posedge up_syn) begin
                 `FUNCT3_SB: rw_len = 2'b00;
                 `FUNCT3_SH: rw_len = 2'b01;
                 `FUNCT3_SW: rw_len = 2'b11;
+                default: $display("ERROR ID STORE");
             endcase
         end
         `OP_OP: begin
