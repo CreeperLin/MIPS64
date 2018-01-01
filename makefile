@@ -33,7 +33,7 @@ rom.o:
 	#gtkwave test.vcd
 	#vi ./vvp.log
 	#cat ./vvp.log|grep "IO"
-	sed -i 's/[[:space:]]//g' ./test/test.out
+	sed -i 's/[[:space:]]\{2,\}//g' ./test/test.out
 	cat ./test/test.out 
 	if [ -f $(TESTSRC)$@.ans ]; then cat $(TESTSRC)$@.ans;diff ./test/test.out $(TESTSRC)$@.ans; fi
 .PHONY: clean

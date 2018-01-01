@@ -10,10 +10,10 @@ module pipeIF
 )
 (
     input clk, rst,
-    input up_syn,
-    output reg up_ack,
-    output reg down_syn,
-    input down_ack,
+    input buf_avail,
+    //output reg buf_re,
+    output reg buf_we,
+    input buf_ack,
 
     //output purge_e,
     input jp_e,
@@ -49,14 +49,14 @@ assign r_len = 3;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         //pc <= 0;
-        pc <= `PC_ENTRY;
-        nxpc <= `PC_ENTRY;
-        pc_out <= 0;
-        up_ack <= 0;
-        down_syn <=0;
-        inst <= 0;
-        addr <= 0;
-        re <= 0;
+        pc = `PC_ENTRY;
+        nxpc = `PC_ENTRY;
+        pc_out = 0;
+        //buf_re <= 0;
+        buf_we = 0;
+        inst = 0;
+        addr = 0;
+        re = 0;
     end else begin
 
     end
@@ -65,9 +65,11 @@ end
 //wire[PC_L-1:0] inst_no;
 //assign inst_no = (pc-`PC_MAIN)/4;
 
-always @(posedge up_syn) begin
+always @(posedge buf_avail) begin
+    //buf_re = 1;
     pc = nxpc;
     addr = pc[MADDR_L-1:0];
+    //buf_re = #1 0;
     re = 1;
     #5;
     //inst[31:0] = {datain[7:0],datain[15:8],datain[23:16],datain[31:24]};
@@ -78,10 +80,11 @@ always @(posedge up_syn) begin
     nxpc = nxpc + 4;
     $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
 
-    up_ack = 1;
     if (inst!=32'b0) begin
-        down_syn = 1;
+        buf_we = 1;
+        buf_we = #1 0;
     end else begin
+        $display("NO INSTRUCTION STOP");
         $stop;
     end
 end
@@ -92,12 +95,12 @@ always @(posedge jp_e) begin
     $display("IF:Goto %x",nxpc);
 end
 
-always @(negedge up_syn) begin
-    up_ack = #1 0;
-end
+//always @(negedge buf_avail) begin
+    //buf_re = #1 0;
+//end
 
-always @(posedge down_ack) begin
-    down_syn = #1 0;
-end
+//always @(posedge buf_ack) begin
+    //buf_we = #1 0;
+//end
 
 endmodule

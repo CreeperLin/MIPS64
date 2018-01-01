@@ -10,7 +10,7 @@ module buffer
     input re, we,
     input[DATA_L-1:0] din,
     output reg[DATA_L-1:0] dout,
-    output empty, full
+    output avail, full
 );
 localparam BUF_DEPTH = 1 << ADDR_L;
 reg[DATA_L-1:0] data[BUF_DEPTH-1:0];
@@ -20,7 +20,7 @@ wire unsigned[ADDR_L-1:0] winc;
 //reg[ADDR_L:0] sz;
 assign winc = wpt + 1'b1;
 assign full = (winc == rpt);
-assign empty = (rpt == wpt);
+assign avail = (rpt != wpt);
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         dout <= 0;
@@ -33,21 +33,21 @@ end
 
 always @(posedge we) begin
     if (full) begin
-        $display("BUF:ID:%d FULL w:%d r:%d",BUF_ID,wpt,rpt);
+        $display("BUF:ID:%d ERROR FULL w:%d r:%d",BUF_ID,wpt,rpt);
     end else begin
         data[wpt] = din;
         wpt = wpt + 1;
-        //$display("BUF:ID:%d Write data:%d wpt:%d",BUF_ID,din,wpt);
+        $display("BUF:ID:%d Write data:%d wpt:%d",BUF_ID,din,wpt);
     end
 end
 always @(posedge re) begin
-    if (empty) begin
-        dout = 0;
-        $display("BUF:ID:%d EMPTY w:%d r:%d",BUF_ID,wpt,rpt);
-    end else begin
+    if (avail) begin
         dout = data[rpt];
         rpt = rpt + 1;
-        //$display("BUF:ID:%d Read data:%d wpt:%d",BUF_ID,dout,rpt);
+        $display("BUF:ID:%d Read data:%d wpt:%d",BUF_ID,dout,rpt);
+    end else begin
+        dout = 0;
+        $display("BUF:ID:%d ERROR EMPTY w:%d r:%d",BUF_ID,wpt,rpt);
     end
 end
 endmodule

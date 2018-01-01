@@ -8,10 +8,10 @@ module pipeID
 )
 (
     input clk, rst,
-    input up_syn,
-    output reg up_ack,
-    output reg down_syn,
-    input down_ack,
+    input buf_avail,
+    output reg buf_re,
+    output reg buf_we,
+    input buf_ack,
 
     input[31:0] inst,
     input[31:0] pc_in,
@@ -21,7 +21,6 @@ module pipeID
     input[REG_SZ-1:0] reg_in,
     //input[REG_SZ-1:0] pc_in,
 
-    output[6:0] op,
     output reg[ALUOP_L-1:0] alu_op,
     output reg alu_c,
     output[4:0] rd,
@@ -32,7 +31,8 @@ module pipeID
     output reg[1:0] rw_e,
     output reg[1:0] rw_len
 );
-wire[4:0] shamt;
+//wire[4:0] shamt;
+wire[6:0] op;
 wire[6:0] funct7;
 wire[2:0] funct3;
 wire[4:0] rs1,rs2;
@@ -46,7 +46,7 @@ assign op = inst[6:0];
 assign rd = inst[11:7];
 assign rs1 = inst[19:15];
 assign rs2 = inst[24:20];
-assign shamt = inst[10:6];
+//assign shamt = inst[10:6];
 assign funct7 = inst[31:25];
 assign funct3 = inst[14:12];
 assign pc_out = pc_in;
@@ -66,8 +66,8 @@ end
 endtask
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        up_ack <= 0;
-        down_syn <=0;
+        buf_re <= 0;
+        buf_we <=0;
         opr1 <= 0;
         opr2 <= 0;
         val <=0;
@@ -79,9 +79,9 @@ always @(posedge clk or posedge rst) begin
 
     end
 end
-always @(posedge up_syn) begin
-    #1;
-    up_ack = 1;
+always @(posedge buf_avail) begin
+    buf_re = 1;
+    buf_re = #1 0;
     //reg_idx = rs1;
     //reg_re = 1;
     //opr1 = reg_in;
@@ -125,7 +125,7 @@ always @(posedge up_syn) begin
                 `FUNCT3_SLTIU: alu_op = `ALU_SLTU;
                 `FUNCT3_ORI: alu_op = `ALU_OR;
                 `FUNCT3_ANDI: alu_op = `ALU_AND;
-                default: $display("ERROR:ID OP_OP");
+                default: $display("ID:ERROR OP_OP");
             endcase
         end
         `OP_LOAD: begin
@@ -154,7 +154,7 @@ always @(posedge up_syn) begin
                     rw_len = 2'b11;
                     rw_e = 2'b10;
                 end
-                default: $display("ERROR ID LOAD");
+                default: $display("ID:ERROR LOAD");
             endcase
         end
         `OP_BRANCH: begin
@@ -178,7 +178,7 @@ always @(posedge up_syn) begin
                     alu_op = `ALU_SLTU;
                     alu_c = 1;
                 end
-                default: $display("ERROR ID BRANCH");
+                default: $display("ID:ERROR BRANCH");
             endcase
         end
         `OP_STORE: begin
@@ -191,7 +191,7 @@ always @(posedge up_syn) begin
                 `FUNCT3_SB: rw_len = 2'b00;
                 `FUNCT3_SH: rw_len = 2'b01;
                 `FUNCT3_SW: rw_len = 2'b11;
-                default: $display("ERROR ID STORE");
+                default: $display("ID:ERROR STORE");
             endcase
         end
         `OP_OP: begin
@@ -209,7 +209,7 @@ always @(posedge up_syn) begin
                 `FUNCT3_SLTU: alu_op = `ALU_SLTU;
                 `FUNCT3_OR: alu_op = `ALU_OR;
                 `FUNCT3_AND: alu_op = `ALU_AND;
-                default: $display("ERROR:ID OP_OP");
+                default: $display("ID:ERROR OP_OP");
             endcase
         end
         `OP_MISC_MEM: opr2=0;
@@ -217,17 +217,17 @@ always @(posedge up_syn) begin
             alu_op = `ALU_PASS;
             $display("ID:syscall N/A");
         end
-        default: $display("ID: unknown op:%b",op);
+        default: $display("ID:ERROR unknown op:%b",op);
     endcase
     $display("ID: op:%b f3:%b f7:%b rd:%d rs1:%d rs2:%d opr1:%d opr2:%d val:%d alu_op:%d",op,funct3,funct7,rd,rs1,rs2,opr1,opr2,val,alu_op);
-    #1;
-    down_syn = 1;
+    buf_we = 1;
+    buf_we = #1 0;
 end
 
-always @(negedge up_syn) begin
-    up_ack <= #1 0;
-end
-always @(posedge down_ack) begin
-    down_syn <= #1 0;
-end
+//always @(negedge buf_avail) begin
+    //buf_re <= #1 0;
+//end
+//always @(posedge buf_ack) begin
+    //buf_we <= #1 0;
+//end
 endmodule

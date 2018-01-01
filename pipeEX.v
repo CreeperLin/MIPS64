@@ -5,15 +5,14 @@ module pipeEX
 )
 (
     input clk, rst,
-    input up_syn,
-    output reg up_ack,
-    output reg down_syn,
-    input down_ack,
+    input buf_avail,
+    output reg buf_re,
+    output reg buf_we,
+    input buf_ack,
     
     input[31:0] pc_in,
     input[`ALUOP_L] op_in,
     input c_in,
-    input[4:0] rd,
     input signed[REG_SZ-1:0] opr1_in, opr2_in, val_in,
     output signed[REG_SZ-1:0] ans,
     
@@ -25,6 +24,8 @@ module pipeEX
     output[1:0] rw_len_out,
     input wb_e_in,
     output wb_e_out,
+    input[4:0] rd,
+    output[4:0] wb_idx_out,
     input jp_e_in,
     input br_e_in,
     output reg jp_e_out,
@@ -37,6 +38,7 @@ assign dout = val_in;
 assign rw_e_out = rw_e_in;
 assign rw_len_out = rw_len_in;
 assign wb_e_out = wb_e_in;
+assign wb_idx_out = rd;
 //assign jp_e_out = (br_e_in && ans[0]) || jp_e_in;
 //assign jp_pc = ans;
 
@@ -71,15 +73,15 @@ always @(posedge clk or posedge rst) begin
         alu_opr1 <= 0;
         alu_opr2 <= 0;
         alu_c <= 0;
-        up_ack <= 0;
-        down_syn <=0;
+        buf_re <= 0;
+        buf_we <=0;
     end else begin
 
     end
 end
-always @(posedge up_syn) begin
-    #1;
-    up_ack = 1;
+always @(posedge buf_avail) begin
+    buf_re = 1;
+    buf_re = #1 0;
     run_alu(op_in,opr1_in,opr2_in,c_in);
     if (br_e_in && ans[0]) begin
         run_alu(`ALU_ADD,val_in,pc_in,1'b0);
@@ -93,12 +95,13 @@ always @(posedge up_syn) begin
         run_alu(`ALU_ADD,pc_in,val_in,1'b0);
     end
     $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1_in,opr2_in,c_in,ans,jp_e_out,jp_pc);
-    down_syn = 1;
+    buf_we = 1;
+    buf_we = #1 0;
 end
-always @(negedge up_syn) begin
-    up_ack <= #1 0;
-end
-always @(posedge down_ack) begin
-    down_syn <= #1 0;
-end
+//always @(negedge buf_avail) begin
+    //buf_re <= #1 0;
+//end
+//always @(posedge buf_ack) begin
+    //buf_we <= #1 0;
+//end
 endmodule

@@ -1,10 +1,10 @@
 module pipeWB
 (
     input clk, rst,
-    input up_syn,
-    output reg up_ack,
-    output reg down_syn,
-    input down_ack,
+    input buf_avail,
+    output reg buf_re,
+    output reg sig_e,
+    //input buf_ack,
     
     input wb_e,
     input[31:0] din,
@@ -16,20 +16,21 @@ module pipeWB
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         reg_we <= 0;
-        up_ack <= 0;
+        buf_re <= 0;
         dout <= 0;
         idxout <= 0;
         //#100;
-        down_syn <= 1;
+        sig_e = 1;
+        sig_e = #1 0;
     end else begin
 
     end
 end
 //assign idxout = idxin;
 //assign dout = din;
-always @(posedge up_syn) begin
-    #1;
-    up_ack = 1;
+always @(posedge buf_avail) begin
+    buf_re = 1;
+    buf_re = #1 0;
     case (wb_e)
         1'b1: begin
             dout = din;
@@ -42,18 +43,16 @@ always @(posedge up_syn) begin
         1'b0: begin
             $display("WB:None\n");
         end
+        default: $display("WB:ERROR");
     endcase
-    down_syn = 1;
+    sig_e = 1;
+    sig_e = #1 0;
 end
-always @(negedge up_syn) begin
-    up_ack <= #1 0;
-end
-always @(posedge down_ack) begin
-    down_syn <= #1 0;
-end
-
-//initial begin
-    //down_syn <= 1;
+//always @(negedge buf_avail) begin
+    //buf_re <= #1 0;
+//end
+//always @(posedge buf_ack) begin
+    //buf_we <= #1 0;
 //end
 
 endmodule

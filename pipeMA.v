@@ -6,14 +6,13 @@ module pipeMA
 )
 (
     input clk, rst,
-    input up_syn,
-    output reg up_ack,
-    output reg down_syn,
-    input down_ack,
+    input buf_avail,
+    output reg buf_re,
+    output reg buf_we,
+    input buf_ack,
 
     input[1:0] rw_e,
     input[1:0] rw_len,
-    input[4:0] rd,
     input[`M_ADDR_L] ex_ans,
     input[`C_DATA_L] ex_din,
     input[`C_DATA_L] mem_in,
@@ -23,11 +22,12 @@ module pipeMA
     output reg[1:0] co_rlen, co_wlen,
     input ex_wb_e,
     output wb_e,
+    input[4:0] ex_wb_idx,
     output[4:0] wb_idx,
     output reg[`C_DATA_L] wb_out
 );
 assign wb_e = ex_wb_e;
-assign wb_idx = rd;
+assign wb_idx = ex_wb_idx;
 //assign co_re = re;
 //assign co_we = we;
 //assign co_rlen = rlen;
@@ -35,8 +35,8 @@ assign wb_idx = rd;
 //assign wb_out = mem_in;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        up_ack <= 0;
-        down_syn <=0;
+        buf_re <= 0;
+        buf_we <=0;
         co_we <= 0;
         co_re <= 0;
         co_rlen <= 0;
@@ -47,9 +47,9 @@ always @(posedge clk or posedge rst) begin
 
     end
 end
-always @(posedge up_syn) begin
-    #1;
-    up_ack = 1;
+always @(posedge buf_avail) begin
+    buf_re = 1;
+    buf_re = #1 0;
     #5;
     case (rw_e)
     2'b10: begin
@@ -91,14 +91,15 @@ always @(posedge up_syn) begin
         wb_out = ex_ans;
         $display("MA:None");
     end
-    default: $display("MA:Error");
+    default: $display("MA:ERROR");
     endcase
-    down_syn = 1;
+    buf_we = 1;
+    buf_we = #1 0;
 end
-always @(negedge up_syn) begin
-    up_ack <= #1 0;
-end
-always @(posedge down_ack) begin
-    down_syn <= #1 0;
-end
+//always @(negedge buf_avail) begin
+    //buf_re <= #1 0;
+//end
+//always @(posedge buf_ack) begin
+    //buf_we <= #1 0;
+//end
 endmodule
