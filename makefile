@@ -1,6 +1,6 @@
 CCR = /opt/riscv/
 CC = $(CCR)bin/riscv32-unknown-elf-
-TESTCASE = case1/
+TESTCASE = case0/
 TESTSRC = ./test/$(TESTCASE)
 #CC = $(CCR)bin/riscv32-unknown-linux-gnu-
 TSF = -march=rv32i -mabi=ilp32
@@ -20,7 +20,7 @@ rom.o:
 	#$(CC)objcopy -O verilog ./test/$@.om ./test/test.dat
 	$(CC)as ./test/test.s -o ./test/test.o $(TSF)
 	$(CC)ld ./test/test.o ./test/rom/rom.o -o ./test/test.om $(LDF)
-	$(CC)objdump -d ./test/test.om > ./test/test.dump
+	$(CC)objdump -D ./test/test.om > ./test/test.dump
 	$(CC)objcopy -O verilog ./test/test.om ./test/test.dat
 	#$(CC)ld ./test/$@.o -o ./test/$@.om
 	#$(CC)as $< -o ./test/$@.o  

@@ -24,10 +24,15 @@ module pipeMA
     output wb_e,
     input[4:0] ex_wb_idx,
     output[4:0] wb_idx,
-    output reg[`C_DATA_L] wb_out
+    output reg[`C_DATA_L] wb_out,
+    output[4:0] MA_fwd_idx,
+    output[31:0] MA_fwd_val
 );
 assign wb_e = ex_wb_e;
 assign wb_idx = ex_wb_idx;
+
+assign MA_fwd_idx = ((rw_e==2'b11)||(rw_e==2'b10)) ? ex_wb_idx : 0;
+assign MA_fwd_val = wb_out;
 //assign co_re = re;
 //assign co_we = we;
 //assign co_rlen = rlen;

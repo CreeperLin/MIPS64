@@ -5,7 +5,7 @@
 module ram 
 #(
     parameter MADDR_SZ = 32,
-    parameter MEM_SZ = 2**25
+    parameter MEM_SZ = 2**21
 )
 (
     input clk, rst,
@@ -61,7 +61,11 @@ always @(posedge re) begin
     $display("MEM Read: addr:%x, data:%x",raddr,dataout);
 end
 
+integer i;
 initial begin
+    for (i=0;i<MEM_SZ;i=i+1) begin
+        data[i] = 0;
+    end
     $readmemh("./test/test.dat", data);
     fp_r = $fopen("./test/test.in", "r");
     fp_w = $fopen("./test/test.out", "w");

@@ -24,18 +24,23 @@ module pipeID
     output reg[ALUOP_L-1:0] alu_op,
     output reg alu_c,
     output[4:0] rd,
+    output reg[4:0] rs1_out,rs2_out,
     output reg signed[REG_SZ-1:0] opr1,opr2,val,
     //output reg signed[31:0] imm,
     output jp_e, br_e, wb_e,
     //output reg wb_e,
     output reg[1:0] rw_e,
-    output reg[1:0] rw_len
+    output reg[1:0] rw_len,
+    input[4:0] MA_fwd_idx,
+    input[31:0] MA_fwd_val,
+    input[4:0] EX_fwd_idx,
+    input[31:0] EX_fwd_val
 );
 //wire[4:0] shamt;
 wire[6:0] op;
+wire[4:0] rs1, rs2;
 wire[6:0] funct7;
 wire[2:0] funct3;
-wire[4:0] rs1,rs2;
 wire signed[31:0] imm_I, imm_S, imm_B, imm_U, imm_J;
 assign imm_I = {{21{inst[31]}},inst[30:20]};
 assign imm_S = {{21{inst[31]}},inst[30:25],inst[11:7]};
@@ -58,10 +63,23 @@ task fetch_reg;
 input[4:0] idx;
 output reg[REG_SZ-1:0] dout;
 begin
-    reg_idx = idx;
-    reg_re = 1;
-    reg_re = #1 0;
-    dout = reg_in;
+    case (idx)
+        5'b0: dout = 0;
+        MA_fwd_idx: begin 
+            dout = MA_fwd_val;
+            $display("ID:fwdMA %d %d",idx,dout);
+        end
+        EX_fwd_idx: begin
+            dout = EX_fwd_val;
+            $display("ID:fwdEX %d %d",idx,dout);
+        end
+        default: begin
+            reg_idx = idx;
+            reg_re = 1;
+            reg_re = #1 0;
+            dout = reg_in;
+        end
+    endcase
 end
 endtask
 always @(posedge clk or posedge rst) begin
@@ -88,6 +106,8 @@ always @(posedge buf_avail) begin
     //reg_re = 0;
     rw_e = 0;
     alu_c = 1'b0;
+    rs1_out = 0;
+    rs2_out = 0;
     case (op)
         `OP_LUI:begin
             alu_op = `ALU_PASS;
@@ -109,12 +129,14 @@ always @(posedge buf_avail) begin
         `OP_JALR: begin
             alu_op = `ALU_ADD;
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             opr2 = imm_I;
             //val = pc_in + 4;
             val = 32'h4;
         end
         `OP_OP_IMM: begin
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             opr2=imm_I;
             case (funct3)
                 `FUNCT3_ADDI: alu_op = `ALU_ADD;
@@ -130,6 +152,7 @@ always @(posedge buf_avail) begin
         end
         `OP_LOAD: begin
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             //re = 1;
             opr2=imm_I;
             alu_op = `ALU_ADD;
@@ -159,7 +182,9 @@ always @(posedge buf_avail) begin
         end
         `OP_BRANCH: begin
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             fetch_reg(rs2,opr2);
+            rs2_out = rs2;
             val=imm_B;
             case (funct3)
                 `FUNCT3_BEQ:
@@ -183,6 +208,7 @@ always @(posedge buf_avail) begin
         end
         `OP_STORE: begin
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             fetch_reg(rs2,val);
             opr2=imm_S;
             alu_op = `ALU_ADD;
@@ -196,7 +222,9 @@ always @(posedge buf_avail) begin
         end
         `OP_OP: begin
             fetch_reg(rs1,opr1);
+            rs1_out = rs1;
             fetch_reg(rs2,opr2);
+            rs2_out = rs2;
             //reg_idx = rs2;
             //reg_re = 1;
             //opr2 = reg_in;

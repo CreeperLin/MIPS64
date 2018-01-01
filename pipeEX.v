@@ -13,6 +13,7 @@ module pipeEX
     input[31:0] pc_in,
     input[`ALUOP_L] op_in,
     input c_in,
+    input[4:0] rd,rs1,rs2,
     input signed[REG_SZ-1:0] opr1_in, opr2_in, val_in,
     output signed[REG_SZ-1:0] ans,
     
@@ -24,14 +25,20 @@ module pipeEX
     output[1:0] rw_len_out,
     input wb_e_in,
     output wb_e_out,
-    input[4:0] rd,
     output[4:0] wb_idx_out,
     input jp_e_in,
     input br_e_in,
     output reg jp_e_out,
-    output reg[REG_SZ-1:0] jp_pc
+    output reg[REG_SZ-1:0] jp_pc,
     //output jp_e_out,
     //output [REG_SZ-1:0] jp_pc
+    output[10-1:0] bp_tag_out,
+    output reg bp_t_out,
+    output reg bp_we,
+    input[4:0] MA_fwd_idx,
+    input[31:0] MA_fwd_val,
+    output[4:0] EX_fwd_idx,
+    output[31:0] EX_fwd_val
 );
 wire[2:0] st;
 assign dout = val_in;
@@ -39,8 +46,13 @@ assign rw_e_out = rw_e_in;
 assign rw_len_out = rw_len_in;
 assign wb_e_out = wb_e_in;
 assign wb_idx_out = rd;
+
+assign EX_fwd_idx = wb_e_in ? rd : 0;
+assign EX_fwd_val = ans;
 //assign jp_e_out = (br_e_in && ans[0]) || jp_e_in;
 //assign jp_pc = ans;
+assign bp_tag_out = pc_in[10-1:0];
+//assign bp_t_out = ans[0];
 
 reg[REG_SZ-1:0] alu_opr1,alu_opr2;
 reg[`ALUOP_L] alu_op;
@@ -74,20 +86,48 @@ always @(posedge clk or posedge rst) begin
         alu_opr2 <= 0;
         alu_c <= 0;
         buf_re <= 0;
-        buf_we <=0;
+        buf_we <= 0;
+        bp_we <= 0;
+        bp_t_out <= 0;
     end else begin
 
     end
 end
+reg[REG_SZ-1:0] opr1,opr2;
 always @(posedge buf_avail) begin
     buf_re = 1;
     buf_re = #1 0;
-    run_alu(op_in,opr1_in,opr2_in,c_in);
-    if (br_e_in && ans[0]) begin
-        run_alu(`ALU_ADD,val_in,pc_in,1'b0);
-        jp_pc = ans;
+    opr1 = 0;
+    opr2 = 0;
+    case (rs1)
+        5'b0: opr1 = opr1_in;
+        MA_fwd_idx: begin
+            opr1 = MA_fwd_val;
+            $display("EX:fwdMA %d %d",rs1,opr1);
+        end
+        default: opr1 = opr1_in;
+    endcase
+    case (rs2)
+        5'b0: opr2 = opr2_in;
+        MA_fwd_idx: begin
+            opr2 = MA_fwd_val;
+            $display("EX:fwdMA %d %d",rs2,opr2);
+        end
+        default: opr2 = opr2_in;
+    endcase
+    run_alu(op_in,opr1,opr2,c_in);
+    if (br_e_in) begin
+        bp_t_out = ans[0];
+        if (ans[0]) begin
+            run_alu(`ALU_ADD,val_in,pc_in,1'b0);
+            jp_pc = ans;
+        end else begin
+            jp_pc = 0;
+        end
         jp_e_out = 1;
         jp_e_out = #1 0;
+        bp_we = 1;
+        bp_we = #1 0;
     end else if (jp_e_in) begin
         jp_pc = ans;
         jp_e_out = 1;

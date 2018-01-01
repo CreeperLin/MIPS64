@@ -1,5 +1,5 @@
 /*IF*/
-`include "b_predictor.v"
+`include "riscv_const.v"
 `define PC_ENTRY 32'h00000000
 `define PC_MAIN 32'h00001000
 module pipeIF
@@ -19,31 +19,36 @@ module pipeIF
     input jp_e,
     input[PC_L-1:0] pc_in,
     input[INST_L-1:0] datain,
-    output reg[MADDR_L-1:0] addr,
+    //output reg[MADDR_L-1:0] addr,
+    output [MADDR_L-1:0] addr,
     output reg re,
     output [1:0] r_len,
     output reg[INST_L-1:0] inst,
     //output [PC_L-1:0] nxpc 
-    output reg[PC_L-1:0] pc_out
-    //output reg[PC_L-1:0] nxpc_out
+    output reg[PC_L-1:0] pc_out,
+    output reg[10-1:0] bp_tag_q,
+    input bp_t
 );
-localparam BP_TAG_L = 10;
-localparam BP_LHLEN = 8;
-localparam BP_GHLEN = 12;
-wire bp_t_out;
-reg bp_we,bp_t_in;
-reg[BP_TAG_L-1:0] bp_tag_q;
-reg[BP_TAG_L-1:0] bp_tag_in;
-b_predictor#(.TAG_LEN(BP_TAG_L),.LOCAL_HLEN(BP_LHLEN),.GLOBAL_HLEN(BP_GHLEN))
-bp(clk,rst,bp_we,bp_tag_in,bp_t_in,bp_tag_q,bp_t_out);
 
 reg[PC_L-1:0] pc;
-reg[PC_L-1:0] j_pc;
-reg j;
-
+reg stall;
 reg[PC_L-1:0] nxpc;
+//wire[PC_L-1:0] nxpc;
 //assign nxpc = (jp_e==1'b1) ? pc_in : pc + 4;
 //assign nxpc = pc + 4;
+
+//wire[6:0] inst_op;
+//assign inst_op = inst[6:0];
+assign addr = nxpc[MADDR_L-1:0];
+
+task fetch_inst;
+begin
+    re = 1;
+    re = #5 0;
+    inst = datain;
+    //inst[31:0] = {datain[7:0],datain[15:8],datain[23:16],datain[31:24]};
+end
+endtask
 
 assign r_len = 3;
 always @(posedge clk or posedge rst) begin
@@ -55,46 +60,64 @@ always @(posedge clk or posedge rst) begin
         //buf_re <= 0;
         buf_we = 0;
         inst = 0;
-        addr = 0;
+        //addr = 0;
         re = 0;
+        stall = 0;
+        //#50;
+        //fetch_inst;
     end else begin
 
     end
 end
 
-//wire[PC_L-1:0] inst_no;
-//assign inst_no = (pc-`PC_MAIN)/4;
-
 always @(posedge buf_avail) begin
-    //buf_re = 1;
-    pc = nxpc;
-    addr = pc[MADDR_L-1:0];
-    //buf_re = #1 0;
-    re = 1;
-    #5;
-    //inst[31:0] = {datain[7:0],datain[15:8],datain[23:16],datain[31:24]};
-    inst = datain;
-    re = 0;
-    //pc <= nxpc;
-    pc_out = nxpc;
-    nxpc = nxpc + 4;
-    $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
-
-    if (inst!=32'b0) begin
-        buf_we = 1;
-        buf_we = #1 0;
+    if (stall) begin
+        $display("IF: stalled");
     end else begin
-        $display("NO INSTRUCTION STOP");
-        $stop;
+        pc = nxpc;
+        pc_out = nxpc;
+        fetch_inst;
+        case (inst[6:0])
+        `OP_JAL, `OP_JALR: begin
+            $display("IF:Jump stall");
+            stall = 1;
+        end
+        `OP_BRANCH: begin
+            bp_tag_q = nxpc[10-1:0];
+            //stall = bp_t ? 1 : 0;
+            stall = 1;
+            $display("IF:Branch stall:%d",stall);
+        end
+        //default: $display("IF:normal inst");
+        endcase
+        $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
+        if (inst!=32'b0) begin
+            buf_we = 1;
+            buf_we = #1 0;
+        end else begin
+            $display("NO INSTRUCTION STOP");
+            $stop;
+        end
+        nxpc = nxpc + 4;
     end
 end
 
 always @(posedge jp_e) begin
     //j_pc = pc_in;
-    nxpc = pc_in;
-    $display("IF:Goto %x",nxpc);
+    if (pc_in) begin
+        nxpc = pc_in;
+        //fetch_inst;
+        if (stall) begin
+            stall = 0;
+        end else begin
+            $display("IF:Purge");
+            //purge
+        end
+        $display("IF:Goto %x",nxpc);
+    end else begin
+        stall = 0;
+    end
 end
-
 //always @(negedge buf_avail) begin
     //buf_re = #1 0;
 //end
@@ -102,5 +125,4 @@ end
 //always @(posedge buf_ack) begin
     //buf_we = #1 0;
 //end
-
 endmodule

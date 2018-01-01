@@ -27,7 +27,7 @@ initial begin
     //repeat(100) #1 clk=!clk;
     #100;
     rst = 0;
-    //forever #1 clk=!clk;
+    forever #1 clk=!clk;
     //repeat(200) #1 clk=!clk;
     //#500000;
     //$display("CPU TIMEOUT");
