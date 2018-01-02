@@ -19,7 +19,7 @@ module ram
 reg[7:0] data[MEM_SZ-1:0];
 
 //assign dataout = data[raddr];
-reg[31:0] outl,inl;
+reg signed[31:0] outl,inl;
 always @(posedge we) begin
     $display("MEM Write: addr:%x, data:%x",waddr,datain);
     data[waddr] = datain;

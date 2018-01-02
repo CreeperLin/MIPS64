@@ -1,6 +1,6 @@
 CCR = /opt/riscv/
 CC = $(CCR)bin/riscv32-unknown-elf-
-TESTCASE = case0/
+TESTCASE = case1/
 TESTSRC = ./test/$(TESTCASE)
 #CC = $(CCR)bin/riscv32-unknown-linux-gnu-
 TSF = -march=rv32i -mabi=ilp32
