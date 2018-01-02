@@ -30,7 +30,7 @@ always @(posedge we) begin
         end
         32'h209: begin
             outl = {data[32'h208],data[32'h207],data[32'h206],data[32'h205]};
-            $fwrite(fp_w,"%d",outl);
+            $fwrite(fp_w,"%0d",outl);
             $display("IO:PrintInt: %0d",outl);
         end
         32'h200: begin
