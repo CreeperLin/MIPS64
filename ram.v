@@ -31,7 +31,7 @@ always @(posedge we) begin
         32'h209: begin
             outl = {data[32'h208],data[32'h207],data[32'h206],data[32'h205]};
             $fwrite(fp_w,"%d",outl);
-            $display("IO:PrintInt: %d",outl);
+            $display("IO:PrintInt: %0d",outl);
         end
         32'h200: begin
             //inl = {data[32'h204],data[32'h203],data[32'h202],data[32'h201]};

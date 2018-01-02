@@ -33,9 +33,9 @@ rom.o:
 	#gtkwave test.vcd
 	#vi ./vvp.log
 	#cat ./vvp.log|grep "IO"
-	sed -i 's/[[:space:]]\{2,\}//g' ./test/test.out
+	#sed -i 's/[[:space:]]\{2,\}//g' ./test/test.out
 	cat ./test/test.out 
 	if [ -f $(TESTSRC)$@.ans ]; then cat $(TESTSRC)$@.ans;diff ./test/test.out $(TESTSRC)$@.ans; fi
 .PHONY: clean
 clean:
-	rm -f ./*.log ./*.vcd ./a.out ./test/*.s ./test/*.o ./test/*.om ./test/test.* ./test/*.dump
+	rm -f ./*.log ./*.fst ./*.vcd ./a.out ./test/*.s ./test/*.o ./test/*.om ./test/test.* ./test/*.dump
