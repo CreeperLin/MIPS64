@@ -1,51 +1,141 @@
+`include "def.v"
 module cache
 #(
-    parameter CACHE_ROW = 64,
-    parameter CACHE_LEN = 8, //bytes
-    parameter ADDR_L = 32 //bit
+    parameter ID = 0,
+    parameter WORD_B = 3, //word bit
+    parameter IDX_B = 5, //idx bit
+    parameter SET = 2
 )
 (
     input clk, rst,
-    input[8*CACHE_LEN-1:0] datain,
-    output reg[8*CACHE_LEN-1:0] dataout,
-    input[ADDR_L-1:0] read_addr,
-    input[ADDR_L-1:0] write_addr,
-    input re, we
+    input[`C_DATA_L] c_din,
+    output reg[`C_DATA_L] c_dout,
+    input[`M_ADDR_L] c_raddr,
+    input[`M_ADDR_L] c_waddr,
+    input[`RW_E_L] c_re, c_we,
+    input[`RW_LEN_L] c_rlen, c_wlen,
+    
+    input[`C_DATA_L] m_din,
+    output reg[`C_DATA_L] m_dout,
+    output[`M_ADDR_L] m_raddr,
+    output[`M_ADDR_L] m_waddr,
+    output reg[`RW_E_L] m_re, m_we,
+    output[`RW_LEN_L] m_rlen, m_wlen
 );
-//2-way set associative
-localparam OFS_L = 6;
-localparam TAG_L = 21;
-localparam IDX_L = 5;
-localparam FLG_L = 1;
-reg[FLG_L+TAG_L-1:0] map1[CACHE_ROW/2-1:0];
-reg[8*CACHE_LEN-1:0] data1[CACHE_ROW/2-1:0];
-reg[FLG_L+TAG_L-1:0] map2[CACHE_ROW/2-1:0];
-reg[8*CACHE_LEN-1:0] data2[CACHE_ROW/2-1:0];
-wire[TAG_L-1:0] tag;
-wire[IDX_L-1:0] idx;
-wire[OFS_L-1:0] ofs;
-assign r_tag = read_addr[ADDR_L-1:ADDR_L-TAG_L];
-assign r_idx = read_addr[ADDR_L-TAG_L-1:OFS_L];
-assign r_ofs = read_addr[OFS_L-1:0];
-assign w_tag = write_addr[ADDR_L-1:ADDR_L-TAG_L];
-assign w_idx = write_addr[ADDR_L-TAG_L-1:OFS_L];
-assign w_ofs = write_addr[OFS_L-1:0];
-reg[FLG_L+TAG_L-1:0] key1;
-reg[FLG_L+TAG_L-1:0] key2;
-reg[CACHE_LEN-1:0] val1;
-reg[CACHE_LEN-1:0] val2;
-always @(re) begin
-    key1 <= map1[r_idx];
-    key2 <= map2[r_idx];
-    val1 <= data1[r_idx];
-    val2 <= data2[r_idx];
+localparam REF_B = 2;
+localparam VALID_B = 1;
+localparam DIRTY_B = 0;
 
-    dataout = val1;
+localparam OFS_B = WORD_B + 2;
+localparam TAG_B = 32 - IDX_B - OFS_B;
+localparam FLG_B = 3;// ref valid dirty
+reg[FLG_B+TAG_B-1:0] info[SET-1:0][IDX_B-1:0];
+//reg[8-1:0] data[SET-1:0][IDX_B-1:0][OFS_B-1:0];
+reg[32-1:0] data[SET-1:0][IDX_B-1:0][WORD_B-1:0];
+
+wire[TAG_B-1:0] r_tag;
+wire[IDX_B-1:0] r_idx;
+wire[OFS_B-1:0] r_ofs;
+wire[WORD_B-1:0] r_word;
+wire[TAG_B-1:0] w_tag;
+wire[IDX_B-1:0] w_idx;
+wire[OFS_B-1:0] w_ofs;
+wire[WORD_B-1:0] w_word;
+assign r_tag = c_raddr[`K_M_ADDR_L-1:`K_M_ADDR_L-TAG_B];
+assign r_idx = c_raddr[`K_M_ADDR_L-TAG_B-1:OFS_B];
+assign r_ofs = c_raddr[OFS_B-1:0];
+assign r_word = c_raddr[OFS_B-1:2];
+assign w_tag = c_waddr[`K_M_ADDR_L-1:`K_M_ADDR_L-TAG_B];
+assign w_idx = c_waddr[`K_M_ADDR_L-TAG_B-1:OFS_B];
+assign w_ofs = c_waddr[OFS_B-1:0];
+assign w_word = c_waddr[OFS_B-1:2];
+
+wire[FLG_B+TAG_B-1:0] r_key[SET-1:0];
+wire[32-1:0] r_data;
+wire[SET-1:0] r_match;
+
+wire[FLG_B+TAG_B-1:0] w_key[SET-1:0];
+wire[SET-1:0] w_match;
+wire[SET-1:0] w_dirty;
+wire[SET-1:0] w_avail;
+wire[SET-1:0] w_replace;
+
+wire[(2**SET)-1:0] set_sel;
+
+genvar i;
+generate
+    for (i=0;i<(1<<SET);i=i+1) begin
+        assign set_sel[i] = `LOG2(i); 
+    end
+    for (i=0;i<SET;i=i+1) begin
+        assign r_key[i] = info[i][r_idx];
+        assign r_match[i] = (r_key[i][TAG_B+VALID_B] == 1) && (r_key[i][TAG_B-1:0] == r_tag);
+        assign w_key[i] = info[i][w_idx];
+        assign w_match[i] = (w_key[i][TAG_B+VALID_B] == 1) && (w_key[i][TAG_B-1:0] == w_tag);
+        assign w_avail[i] = w_key[i][TAG_B+VALID_B] == 0;
+        assign w_dirty[i] = w_key[i][TAG_B+DIRTY_B];
+        assign w_replace[i] = w_key[i][TAG_B+REF_B] == 0;
+    end
+endgenerate
+
+assign m_raddr = c_raddr;
+assign m_waddr = c_waddr;
+assign m_rlen = c_rlen;
+assign m_wlen = c_wlen;
+
+always @(c_re) begin
+    if (r_match==-1) begin
+        m_re = 1;
+        m_re = #5 0;
+        c_dout = m_din;
+        $display("CACHE:%0d ReadMiss %x from MEM: %d",ID,c_raddr,c_dout);
+    end else begin
+        c_dout = data[set_sel[r_match]][r_idx][r_word];
+        $display("CACHE:%0d ReadHit %x %d",c_raddr,c_dout);
+    end
 end
 
-always @(we) begin
-    data1[w_idx] <= datain;
-    data2[w_idx] <= datain;
+always @(c_we) begin
+    if (w_match==-1) begin
+        if (w_avail==-1) begin
+            data[set_sel[w_replace]][w_idx][w_word] = c_din;
+            info[set_sel[w_replace]][w_idx] = {1'b1,1'b1,w_tag};
+            $display("CACHE:%0d WriteMissReplace %x %d set:%d",ID,c_waddr,c_din,set_sel[w_avail]);
+        end else begin
+            data[set_sel[w_avail]][w_idx][w_word] = c_din;
+            info[set_sel[w_avail]][w_idx] = {1'b1,1'b1,w_tag};
+            $display("CACHE:%0d WriteMissCreate %x %d set:%d",ID,c_waddr,c_din,set_sel[w_avail]);
+        end
+    end else begin
+        data[set_sel[w_match]][w_idx][w_word] = c_din;
+        info[set_sel[w_match]][w_idx][TAG_B+DIRTY_B] = 1;
+        $display("CACHE:%0d WriteHit %x %d set:%d",ID,c_waddr,c_din,set_sel[w_match]);
+    end
+    //write through
+    m_dout = c_din;
+    m_we = 1;
+    m_we = #5 0;
 end
+
+integer j,k,l;
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        m_re = 0;
+        m_we = 0;
+        c_dout = 0;
+        m_dout = 0;
+        for (j=0;j<(1<<SET);j=j+1) begin
+            for (k=0;k<(1<<IDX_B);k=k+1) begin
+                for (l=0;l<(1<<WORD_B);l=l+1) begin
+                    data[j][k][l] = 0;
+                end
+                info[j][k] = 0;
+            end
+        end
+    end else begin
+
+    end
+end
+
 endmodule
 

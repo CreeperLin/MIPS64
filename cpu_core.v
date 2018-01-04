@@ -87,6 +87,36 @@ wire[BP_TAG_L-1:0] bp_tag_q, bp_tag_in;
 b_predictor#(.TAG_LEN(BP_TAG_L),.LOCAL_HLEN(BP_LHLEN),.GLOBAL_HLEN(BP_GHLEN))
 bp(clk,rst,bp_we,bp_tag_in,bp_t_in,bp_tag_q,bp_t_out);
 
+wire[R_PORT*`C_DATA_L] ca_din;
+wire[W_PORT*`C_DATA_L] ca_dout;
+wire[R_PORT*`M_ADDR_L] ca_raddr;
+wire[W_PORT*`M_ADDR_L] ca_waddr;
+wire[R_PORT*`RW_E_L] ca_re;
+wire[W_PORT*`RW_E_L] ca_we;
+wire[R_PORT*`RW_LEN_L] ca_rlen;
+wire[W_PORT*`RW_LEN_L] ca_wlen;
+
+wire[`C_DATA_L] c0_plh;
+cache#(.ID(0),.WORD_B(3),.IDX_B(5),.SET(2))
+c0(clk,rst,/*ca_din[`C_DATA_L]*/ 0,ca_dout[`C_DATA_L],
+    ca_raddr[`M_ADDR_L],/*ca_waddr[`M_ADDR_L]*/ 0,
+    ca_re[`RW_E_L],/*ca_we[`RW_E_L]*/ 0,
+    ca_rlen[`RW_LEN_L],/*ca_wlen[`RW_LEN_L]*/ 0,
+    core_din[`C_DATA_L],/*core_dout[`C_DATA_L]*/c0_plh,
+    core_raddr[`M_ADDR_L],/*core_waddr[`M_ADDR_L]*/c0_plh,
+    co_re[`RW_E_L],/*co_we[`RW_E_L]*/c0_plh[0],
+    co_rlen[`RW_LEN_L],/*co_wlen[`RW_LEN_L]*/c0_plh[2:1]);
+
+cache#(.ID(1),.WORD_B(3),.IDX_B(5),.SET(2))
+c1(clk,rst,ca_din[2*`K_C_DATA_L-1:1*`K_C_DATA_L],ca_dout[`C_DATA_L],
+    ca_raddr[2*`K_M_ADDR_L-1:1*`K_M_ADDR_L],ca_waddr[`M_ADDR_L],
+    ca_re[1],ca_we[`RW_E_L],
+    ca_rlen[3:2],ca_wlen[`RW_LEN_L],
+    core_din[2*`K_C_DATA_L-1:1*`K_C_DATA_L],core_dout[`C_DATA_L],
+    core_raddr[2*`K_C_DATA_L-1:1*`K_C_DATA_L],core_waddr[`M_ADDR_L],
+    co_re[1],co_we[`RW_E_L],
+    co_rlen[3:2],co_wlen[`RW_LEN_L]);
+
 wire sig_loop;
 
 pipeIF pIF(clk,rst,sig_loop,buf_we[0],buf_ack[0],
