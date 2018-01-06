@@ -9,7 +9,8 @@ module pipeMA
     input buf_avail,
     output reg buf_re,
     output reg buf_we,
-    input buf_ack,
+    input buf_rack, buf_wack,
+    //output reg stg_ack,
 
     input[1:0] rw_e,
     input[1:0] rw_len,
@@ -20,6 +21,7 @@ module pipeMA
     output reg[`M_ADDR_L] m_raddr,m_waddr,
     output reg co_re, co_we,
     output reg[1:0] co_rlen, co_wlen,
+    input co_rack, co_wack,
     input ex_wb_e,
     output wb_e,
     input[4:0] ex_wb_idx,
@@ -33,11 +35,14 @@ assign wb_idx = ex_wb_idx;
 
 assign MA_fwd_idx = ((rw_e==2'b11)||(rw_e==2'b10)) ? ex_wb_idx : 0;
 assign MA_fwd_val = wb_out;
-//assign co_re = re;
-//assign co_we = we;
-//assign co_rlen = rlen;
-//assign co_wlen = wlen;
-//assign wb_out = mem_in;
+
+localparam STATE_B      = 3;
+localparam STATE_IDLE   = 0;
+localparam STATE_R      = 1;
+localparam STATE_RU     = 2;
+localparam STATE_W      = 3;
+reg[STATE_B-1:0] state;
+
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         buf_re <= 0;
@@ -46,35 +51,66 @@ always @(posedge clk or posedge rst) begin
         co_re <= 0;
         co_rlen <= 0;
         co_wlen <= 0;
+        state = 0;
+        //stg_ack = 0;
         //co_wlen <= 0;
         //co_rlen <= 0;
     end else begin
 
     end
 end
+
 always @(posedge buf_avail) begin
     buf_re = 1;
-    buf_re = #1 0;
-    #5;
+end
+
+always @(posedge buf_rack) begin
+    buf_re = 0;
     case (rw_e)
     2'b10: begin
         co_rlen = rw_len;
         m_raddr = ex_ans;
         co_re = 1;
-        co_re = #5 0; 
-        case (rw_len)
-            2'b00: wb_out = {{25{mem_in[7]}}, mem_in[6:0]};
-            2'b01: wb_out = {{17{mem_in[15]}}, mem_in[14:0]};
-            2'b11: wb_out = mem_in;
-            default: $display("MA:Error");
-        endcase
-        $display("MA:Read m_raddr:%x mem_in:%d",m_raddr,mem_in);
+        state = STATE_R;
     end
     2'b11: begin
         co_rlen = rw_len;
         m_raddr = ex_ans;
         co_re = 1;
-        co_re = #5 0;
+        state = STATE_RU;       
+    end
+    2'b01: begin
+        co_wlen = rw_len;
+        m_waddr = ex_ans;
+        mem_out = ex_din;
+        co_we = 1;
+        state = STATE_W;
+    end
+    2'b00: begin
+        wb_out = ex_ans;
+        $display("MA:None");
+        buf_we = 1;
+    end
+    default: $display("MA:ERROR");
+    endcase
+end
+
+always @(posedge buf_wack) begin
+    buf_we = 0;
+end
+
+always @(posedge co_rack) begin
+    case (state)
+        STATE_R: begin
+            case (rw_len)
+                2'b00: wb_out = {{25{mem_in[7]}}, mem_in[6:0]};
+                2'b01: wb_out = {{17{mem_in[15]}}, mem_in[14:0]};
+                2'b11: wb_out = mem_in;
+                default: $display("MA:Error");
+            endcase
+            $display("MA:Read m_raddr:%x mem_in:%d",m_raddr,mem_in);
+        end
+        STATE_RU: begin
         wb_out = mem_in;
         //case (rw_len)
             //2'b00: wb_out = {24'b0, mem_in[7:0]};
@@ -83,28 +119,20 @@ always @(posedge buf_avail) begin
             //default: $display("MA:Error");
         //endcase
         $display("MA:Read Unsigned m_raddr:%x mem_in:%d wb_out:%d",m_raddr,mem_in,wb_out);
-    end
-    2'b01: begin
-        co_wlen = rw_len;
-        m_waddr = ex_ans;
-        co_we = 1;
-        mem_out = ex_din;
-        co_we = #5 0;
-        $display("MA:Write m_waddr:%x mem_out:%d",m_waddr,mem_out);
-    end
-    2'b00: begin
-        wb_out = ex_ans;
-        $display("MA:None");
-    end
-    default: $display("MA:ERROR");
+        end
+        default: $display("MA:ERROR rack");
+    endcase
+    co_re = 0;
+    buf_we = 1;
+end
+always @(posedge co_wack) begin
+    co_we = 0;
+    case (state)
+        STATE_W: begin
+            $display("MA:Write m_waddr:%x mem_out:%d",m_waddr,mem_out);
+        end
+        default: $display("MA:ERROR wack");
     endcase
     buf_we = 1;
-    buf_we = #1 0;
 end
-//always @(negedge buf_avail) begin
-    //buf_re <= #1 0;
-//end
-//always @(posedge buf_ack) begin
-    //buf_we <= #1 0;
-//end
 endmodule

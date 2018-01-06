@@ -15,7 +15,8 @@ module riscv_cpu
     output[`M_DATA_L] data_out,
     output[`M_ADDR_L] read_addr,
     output[`M_ADDR_L] write_addr,
-    output c_re, c_we
+    output c_re, c_we,
+    input m_rack, m_wack
 );
 //wire[DATA_L-1:0] c1_din;
 //wire[DATA_L-1:0] c1_dout;
@@ -31,11 +32,13 @@ wire[RPORT * `C_DATA_L] co_din;
 wire[WPORT * `C_DATA_L] co_dout;
 wire[RPORT * `M_ADDR_L] co_raddr;
 wire[WPORT * `M_ADDR_L] co_waddr;
+wire[RPORT-1:0] co_rack;
+wire[WPORT-1:0] co_wack;
 cpu_core core0(clk,rst,co_din[2*`C_DATA_L],co_dout[`C_DATA_L],
     co_raddr[2*`M_ADDR_L],co_waddr[`M_ADDR_L],
-    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L]);
-mmu mmu1 (clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,
-    co_dout,co_din,co_raddr,co_waddr,co_re,co_we,co_rlen,co_wlen);
+    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L],co_rack,co_wack);
+mmu mmu1 (clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,m_rack,m_wack,
+    co_dout,co_din,co_raddr,co_waddr,co_re,co_we,co_rlen,co_wlen,co_rack,co_wack);
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin

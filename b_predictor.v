@@ -7,6 +7,7 @@ module b_predictor
 (
     input clk,rst,
     input we,
+    output reg wack,
     input[TAG_LEN-1:0] tag_in,
     input t_in,
     input[TAG_LEN-1:0] tag_q,
@@ -20,6 +21,7 @@ integer i;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         global_hist = 0;
+        wack = 0;
         for (i=0;i<GLOBAL_HLEN;i=i+1) begin
             global_pht[i] = 0;
         end
@@ -49,5 +51,11 @@ always @(posedge we) begin
     local_pht[in_local_idx] = in_local_phte + 1;
     global_hist = {global_hist[GLOBAL_HLEN-2:0],t_in};
     global_pht[global_hist] = in_global_phte + 1; 
+    wack = 1;
 end
+
+always @(negedge we) begin
+    wack = 0;
+end
+
 endmodule

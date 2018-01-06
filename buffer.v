@@ -10,6 +10,7 @@ module buffer
     input re, we,
     input[DATA_L-1:0] din,
     output reg[DATA_L-1:0] dout,
+    output reg r_ack, w_ack,
     output avail, full
 );
 localparam BUF_DEPTH = 1 << ADDR_L;
@@ -26,6 +27,8 @@ always @(posedge clk or posedge rst) begin
         dout <= 0;
         rpt <= 0;
         wpt <= 0;
+        r_ack = 0;
+        w_ack = 0;
     end else begin
 
     end
@@ -37,18 +40,28 @@ always @(posedge we) begin
     end else begin
         data[wpt] = din;
         wpt = wpt + 1;
-        //$display("BUF:ID:%d Write data:%d wpt:%d",BUF_ID,din,wpt);
+        $display("BUF:ID:%d Write data:%d wpt:%d",BUF_ID,din,wpt);
     end
+    w_ack = 1;
 end
 always @(posedge re) begin
     if (avail) begin
         dout = data[rpt];
         rpt = rpt + 1;
-        //$display("BUF:ID:%d Read data:%d wpt:%d",BUF_ID,dout,rpt);
+        $display("BUF:ID:%d Read data:%d wpt:%d",BUF_ID,dout,rpt);
     end else begin
         dout = 0;
         $display("BUF:ID:%d ERROR EMPTY w:%d r:%d",BUF_ID,wpt,rpt);
     end
+    r_ack = 1;
+end
+
+always @(negedge we) begin
+    w_ack = 0;
+end
+
+always @(negedge re) begin
+    r_ack = 0;
 end
 endmodule
 

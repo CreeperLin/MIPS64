@@ -14,7 +14,8 @@ module ram
     //output[7:0] dataout,
     input[MADDR_SZ-1:0] raddr,
     input[MADDR_SZ-1:0] waddr,
-    input re,we
+    input re,we,
+    output reg rack,wack
 );
 reg[7:0] data[MEM_SZ-1:0];
 
@@ -22,6 +23,7 @@ reg[7:0] data[MEM_SZ-1:0];
 reg signed[31:0] outl,inl;
 always @(posedge we) begin
     $display("MEM Write: addr:%x, data:%x",waddr,datain);
+    //#1;
     data[waddr] = datain;
     case (waddr)
         32'h104: begin
@@ -49,6 +51,7 @@ always @(posedge we) begin
             $finish;
         end
     endcase
+    wack = 1;
 end
 
 integer fp_r, fp_w, cnt;
@@ -59,7 +62,9 @@ always @(posedge re) begin
             $display("IO:InputByte: %c", dataout);
         end
     endcase
+    //#1;
     dataout = data[raddr];
+    rack = 1;
     $display("MEM Read: addr:%x, data:%x",raddr,dataout);
 end
 
@@ -75,10 +80,18 @@ end
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-
+        wack = 0;
+        rack = 0;
     end else begin
 
     end
 end
 
+always @(negedge we) begin
+    wack = 0;
+end
+
+always @(negedge re) begin
+    rack = 0;
+end
 endmodule

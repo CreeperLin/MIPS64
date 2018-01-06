@@ -13,12 +13,14 @@ module mem_ctrl
     output[MADDR_L-1:0] m_waddr,
     output m_re,
     output m_we,
+    input m_rack, m_wack,
     
     input[C_DATA_L-1:0] c_din,
     output[C_DATA_L-1:0] c_dout,
     input[MADDR_L-1:0] c_raddr,
     input[MADDR_L-1:0] c_waddr,
-    input c_re, c_we
+    input c_re, c_we,
+    output c_rack, c_wack
 );
 
 assign m_dout = c_din;
@@ -27,4 +29,6 @@ assign m_waddr = c_waddr;
 assign c_dout = m_din;
 assign m_re = c_re;
 assign m_we = c_we;
+assign c_rack = m_rack;
+assign c_wack = m_wack;
 endmodule

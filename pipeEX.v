@@ -8,7 +8,7 @@ module pipeEX
     input buf_avail,
     output reg buf_re,
     output reg buf_we,
-    input buf_ack,
+    input buf_rack, buf_wack,
     
     input[31:0] pc_in,
     input[`ALUOP_L] op_in,
@@ -30,11 +30,13 @@ module pipeEX
     input br_e_in,
     output reg jp_e_out,
     output reg[REG_SZ-1:0] jp_pc,
+    input jp_ack,
     //output jp_e_out,
     //output [REG_SZ-1:0] jp_pc
     output[10-1:0] bp_tag_out,
     output reg bp_t_out,
     output reg bp_we,
+    input bp_wack,
     input[4:0] MA_fwd_idx,
     input[31:0] MA_fwd_val,
     output[4:0] EX_fwd_idx,
@@ -57,7 +59,15 @@ assign bp_tag_out = pc_in[10-1:0];
 reg[REG_SZ-1:0] alu_opr1,alu_opr2;
 reg[`ALUOP_L] alu_op;
 reg alu_c, alu_run;
-alu alu1(clk,rst,alu_run,alu_opr1,alu_opr2,alu_c,alu_op,ans,st);
+wire alu_ack;
+alu alu1(clk,rst,alu_run,alu_opr1,alu_opr2,alu_c,alu_op,ans,st,alu_ack);
+
+localparam STATE_B          = 3;
+localparam STATE_IDLE       = 0;
+localparam STATE_OPR_CAL    = 1;
+localparam STATE_JADDR_CAL  = 2;
+localparam STATE_BADDR_CAL  = 3;
+reg[STATE_B-1:0] state;
 
 task run_alu;
 input [`ALUOP_L] t_op;
@@ -71,9 +81,6 @@ begin
     alu_c = t_c;
     alu_op = t_op;
     alu_run = 1;
-    #3;
-    alu_run = 0;
-    $display("ALU:op:%d A:%d B:%d c:%d Y:%d",t_op,t_opr1,t_opr2,t_c,ans);
 end
 endtask
 
@@ -89,6 +96,7 @@ always @(posedge clk or posedge rst) begin
         buf_we <= 0;
         bp_we <= 0;
         bp_t_out <= 0;
+        state = STATE_IDLE;
     end else begin
 
     end
@@ -96,7 +104,10 @@ end
 reg[REG_SZ-1:0] opr1,opr2;
 always @(posedge buf_avail) begin
     buf_re = 1;
-    buf_re = #1 0;
+end
+
+always @(posedge buf_rack) begin
+    buf_re = 0;
     opr1 = 0;
     opr2 = 0;
     case (rs1)
@@ -116,32 +127,60 @@ always @(posedge buf_avail) begin
         default: opr2 = opr2_in;
     endcase
     run_alu(op_in,opr1,opr2,c_in);
-    if (br_e_in) begin
-        bp_t_out = ans[0];
-        if (ans[0]) begin
-            run_alu(`ALU_ADD,val_in,pc_in,1'b0);
-            jp_pc = ans;
-        end else begin
-            jp_pc = 0;
-        end
-        jp_e_out = 1;
-        jp_e_out = #1 0;
-        bp_we = 1;
-        bp_we = #1 0;
-    end else if (jp_e_in) begin
-        jp_pc = ans;
-        jp_e_out = 1;
-        jp_e_out = #1 0;
-        run_alu(`ALU_ADD,pc_in,val_in,1'b0);
-    end
-    $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1_in,opr2_in,c_in,ans,jp_e_out,jp_pc);
-    buf_we = 1;
-    buf_we = #1 0;
+    state = STATE_OPR_CAL;
 end
+
+always @(posedge alu_ack) begin
+    alu_run = 0;
+    $display("ALU:op:%d A:%d B:%d c:%d Y:%d",alu_op,alu_opr1,alu_opr2,alu_c,ans);
+    case (state)
+        STATE_IDLE: begin $display("EX:Idle"); end
+        STATE_OPR_CAL: begin
+            if (br_e_in) begin
+                //buf_we = 1;
+                bp_t_out = ans[0];
+                if (ans[0]) begin
+                    run_alu(`ALU_ADD,val_in,pc_in,1'b0);
+                    state = STATE_BADDR_CAL;
+                end else begin
+                    jp_pc = 0;
+                    jp_e_out = 1;
+                    bp_we = 1;
+                    buf_we = 1;
+                end
+            end else if (jp_e_in) begin
+                jp_pc = ans;
+                jp_e_out = 1;
+                run_alu(`ALU_ADD,pc_in,val_in,1'b0);
+                state = STATE_JADDR_CAL;
+            end else begin
+                buf_we = 1;        
+            end
+            $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1_in,opr2_in,c_in,ans,jp_e_out,jp_pc);
+        end
+        STATE_BADDR_CAL: begin
+            jp_pc = ans;
+            jp_e_out = 1;
+            bp_we = 1;
+            buf_we = 1;
+        end
+        STATE_JADDR_CAL: begin
+            buf_we = 1;
+        end
+        default: $display("EX:ERROR unknown state");
+    endcase
+end
+
+always @(posedge buf_wack) begin
+    buf_we = 0;
+end
+
+always @(posedge jp_ack) begin
+    jp_e_out = 0;
+end
+
 //always @(negedge buf_avail) begin
-    //buf_re <= #1 0;
 //end
 //always @(posedge buf_ack) begin
-    //buf_we <= #1 0;
 //end
 endmodule

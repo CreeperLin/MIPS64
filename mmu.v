@@ -15,15 +15,19 @@ module mmu
     output reg[M_WPORT*`M_ADDR_L] m_waddr,
     output reg[M_RPORT*`RW_E_L] m_re,
     output reg[M_WPORT*`RW_E_L] m_we,
+    input[M_RPORT-1:0] m_rack,
+    input[M_WPORT-1:0] m_wack,
 
     input[C_WPORT*`C_DATA_L] c_din,
-    output reg[C_RPORT*`C_DATA_L] c_dout,
+    output[C_RPORT*`C_DATA_L] c_dout,
     input[C_RPORT*`M_ADDR_L] c_raddr,
     input[C_WPORT*`M_ADDR_L] c_waddr,
     input[C_RPORT*`RW_E_L] c_re,
     input[C_WPORT*`RW_E_L] c_we,
     input[C_RPORT*`RW_LEN_L] c_rlen, 
-    input[C_WPORT*`RW_LEN_L] c_wlen
+    input[C_WPORT*`RW_LEN_L] c_wlen,
+    output reg[C_RPORT-1:0] c_rack,
+    output reg[C_WPORT-1:0] c_wack
 );
 reg[`M_DATA_L] r_buf[3:0];
 reg[`C_DATA_L] c_r_buf[C_RPORT-1:0];
@@ -43,6 +47,8 @@ always @(posedge clk or posedge rst) begin
         empty_r_buf;
         c_r_buf[0] <= 0;
         c_r_buf[1] <= 0;
+        c_wack = 0;
+        c_rack = 0;
     end else begin
     end
 end
@@ -55,13 +61,14 @@ generate
     for(t=0;t<C_RPORT;t=t+1) begin
        assign c_raddr_seg[t] = c_raddr[(t+1)*`K_M_ADDR_L-1:t*`K_M_ADDR_L];
        assign c_rlen_seg[t] = c_rlen[(t+1)*2-1:t*2];
+       assign c_dout[(t+1)*`K_C_DATA_L-1:t*`K_C_DATA_L] = c_r_buf[t];
     end
 endgenerate
 
 //always @(posedge c_re) begin
 always @(c_re) begin
     //$display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
-    c_dout = 0;
+    //c_dout = 0;
     for (k=0;k<C_RPORT;k=k+1) begin
         c_r_buf[k] = 0;
         if (c_re[k]) begin
@@ -77,10 +84,13 @@ always @(c_re) begin
             end
             //c_r_buf[k] = {r_buf[0],r_buf[1],r_buf[2],r_buf[3]};
             c_r_buf[k] = {r_buf[3],r_buf[2],r_buf[1],r_buf[0]};
+            c_rack[k] = 1;
             $display("MMU:ReadPort:%d c_raddr:%x len:%d data:%x",k,c_raddr_seg[k],c_rlen_seg[k]+1,c_r_buf[k]);
+        end else begin
+            c_rack[k] = 0;
         end
     end
-    c_dout = {c_r_buf[1],c_r_buf[0]};
+    //c_dout = {c_r_buf[1],c_r_buf[0]};
     //$display("MMU:Read %x",c_dout);
 end
 //always @(c_we) begin
@@ -97,6 +107,12 @@ always @(posedge c_we) begin
         m_we = 0;
         m_waddr = m_waddr + 1;
     end
+    c_wack = 1;
     $display("MMU:Write c_waddr:%x len:%d data:%d",c_waddr,c_wlen+1,c_din);
 end
+
+always @(negedge c_we) begin
+    c_wack = 0;
+end
+
 endmodule
