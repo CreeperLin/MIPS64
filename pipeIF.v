@@ -76,7 +76,7 @@ always @(posedge clk or posedge rst) begin
 end
 
 //always @(posedge sig_e) begin
-always @(sig_e or sig_s) begin
+always @(sig_e or posedge sig_s) begin
     if (stall) begin
         $display("IF: stalled");
     end else begin

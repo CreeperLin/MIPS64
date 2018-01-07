@@ -134,7 +134,8 @@ always @(posedge alu_ack) begin
     alu_run = 0;
     $display("ALU:op:%d A:%d B:%d c:%d Y:%d",alu_op,alu_opr1,alu_opr2,alu_c,ans);
     case (state)
-        STATE_IDLE: begin $display("EX:Idle"); end
+        STATE_IDLE: begin $display("EX:Idle");
+        end
         STATE_OPR_CAL: begin
             if (br_e_in) begin
                 //buf_we = 1;

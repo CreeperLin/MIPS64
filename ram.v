@@ -23,7 +23,6 @@ reg[7:0] data[MEM_SZ-1:0];
 reg signed[31:0] outl,inl;
 always @(posedge we) begin
     $display("MEM Write: addr:%x, data:%x",waddr,datain);
-    //#1;
     data[waddr] = datain;
     case (waddr)
         32'h104: begin
@@ -62,7 +61,6 @@ always @(posedge re) begin
             $display("IO:InputByte: %c", dataout);
         end
     endcase
-    //#1;
     dataout = data[raddr];
     rack = 1;
     $display("MEM Read: addr:%x, data:%x",raddr,dataout);

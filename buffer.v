@@ -1,4 +1,6 @@
 /*buffer*/
+`ifndef BUFFER_H_
+`define BUFFER_H_
 module buffer
 #(
     parameter BUF_ID = 0,
@@ -64,4 +66,4 @@ always @(negedge re) begin
     r_ack = 0;
 end
 endmodule
-
+`endif

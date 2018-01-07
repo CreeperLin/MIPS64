@@ -154,6 +154,7 @@ end
 endtask
 
 always @(posedge c_re) begin
+    #1;
     $display("CACHE:%0d Read t:%b i:%b w:%b k:%b m:%b",ID,r_tag,r_idx,r_word,r_key[1],r_match);
     if (r_match > 0) begin
         c_dout = data[set_sel[r_match]][r_idx][r_word];
@@ -188,7 +189,8 @@ end
 
 always @(state) begin
     case (state)
-        STATE_IDLE: begin $display("CACHE:%0d Idle",ID); end
+        STATE_IDLE: begin $display("CACHE:%0d Idle",ID);
+        end
         STATE_FE: begin
             m_raddr = {fe_tag,fe_idx,fe_ofs[WORD_B-1:0],2'b00}; 
             m_rlen = 2'b11;

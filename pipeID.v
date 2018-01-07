@@ -302,7 +302,8 @@ end
 always @(posedge reg_rack) begin
     reg_re = 0;
     case (state)
-        STATE_IDLE: begin $display("ID:Idle"); end
+        STATE_IDLE: begin $display("ID:Idle");
+        end
         STATE_F1: begin
             opr1 = reg_in;
             case (op)

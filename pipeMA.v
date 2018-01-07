@@ -45,12 +45,12 @@ reg[STATE_B-1:0] state;
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        buf_re <= 0;
-        buf_we <=0;
-        co_we <= 0;
-        co_re <= 0;
-        co_rlen <= 0;
-        co_wlen <= 0;
+        buf_re = 0;
+        buf_we =0;
+        co_we = 0;
+        co_re = 0;
+        co_rlen = 0;
+        co_wlen = 0;
         state = 0;
         //stg_ack = 0;
         //co_wlen <= 0;
