@@ -1,3 +1,6 @@
+`ifndef DEFINE_H_
+`define DEFINE_H_
+
 `define K_C_DATA_L   32
 `define K_M_DATA_L   8
 `define K_M_ADDR_L   32
@@ -32,3 +35,4 @@
 	(x < 262144)	? 17 : \
 	(x < 524288)	? 18 : \
 	(x < 1048576)	? 19 : -1)
+`endif
