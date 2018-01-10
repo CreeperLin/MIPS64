@@ -142,7 +142,7 @@ endgenerate
 
 //reg[1:0] t_rlen, t_wlen;
 always @(posedge rbuf_rack) begin
-    $display("MMU:RBUF p:%b l:%d a:%x",rb_port,rb_rlen,rb_raddr);
+    //$display("MMU:RBUF p:%b l:%d a:%x",rb_port,rb_rlen,rb_raddr);
     rbuf_re = 0;
     c_r_buf[rb_port] = 0;
     //empty_r_buf;
@@ -195,7 +195,7 @@ always @(posedge m_wack) begin
 end
 
 always @(posedge c_re[0]) begin
-    $display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
+    //$display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
     //rbuf_din = {1'b0,c_rlen_seg[0],c_raddr_seg[0]};
     if (rbuf_we) begin
         $display("MMU:ERROR BUSY %d",k);
@@ -205,7 +205,7 @@ always @(posedge c_re[0]) begin
 end
 
 always @(posedge c_re[1]) begin
-    $display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
+    //$display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
     //rbuf_din = {1'b1,c_rlen_seg[1],c_raddr_seg[1]};
     if (rbuf_we) begin
         $display("MMU:ERROR BUSY %d",k);
@@ -241,7 +241,7 @@ end
 //end
 //always @(c_we) begin
 always @(posedge c_we) begin
-    $display("MMU:WBUF din:%b",wbuf_din);
+    //$display("MMU:WBUF din:%b",wbuf_din);
     wbuf_we = 1;
 end
 
@@ -249,9 +249,4 @@ always @(negedge c_we) begin
     c_wack = 0;
 end
 
-initial begin
-    for (l=0;l<(1<<C_RPORT);l=l+1) begin
-        $display("rportsel %b %b",l,rport_sel[l]);
-    end
-end
 endmodule

@@ -135,7 +135,7 @@ module uart_comm
 				end
 				
 				STATUS_END: begin
-                    $display("UART:%0d Received %b",ID,recv_write_data);
+                    //$display("UART:%0d Received %b",ID,recv_write_data);
 					recv_status <= STATUS_IDLE;
 					recv_clock <= 0;
                     //recv_ack = 1;
@@ -207,7 +207,7 @@ module uart_comm
 				end
 				
 				STATUS_END:begin
-                    $display("UART:%0d Sent %b",ID,send_read_data_buf);
+                    //$display("UART:%0d Sent %b",ID,send_read_data_buf);
                     //send_ack = 1;
 					Tx <= 1;
 					send_status <= STATUS_IDLE;
