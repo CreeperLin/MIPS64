@@ -68,7 +68,6 @@ always @(posedge clk or posedge rst) begin
         m_re = 0;
         stall = 0;
         jp_ack = 0;
-        sig_s = 0;
         //fetch_inst;
     end else begin
 
@@ -76,7 +75,8 @@ always @(posedge clk or posedge rst) begin
 end
 
 //always @(posedge sig_e) begin
-always @(sig_e or posedge sig_s) begin
+//always @(sig_e or posedge sig_s) begin
+always @(sig_e or sig_s) begin
     if (stall) begin
         $display("IF: stalled");
     end else begin

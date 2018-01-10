@@ -1,10 +1,12 @@
 CCR = /opt/riscv/
 CC = $(CCR)bin/riscv32-unknown-elf-
-TESTCASE = case1/
+TESTCASE = case0/
 TESTSRC = ./test/$(TESTCASE)
 #CC = $(CCR)bin/riscv32-unknown-linux-gnu-
 TSF = -march=rv32i -mabi=ilp32
 LDF = -T memory.ld
+system.o:
+	$(CC)gcc ./test/rom/system.c -o ./test/rom/system.o $(TSF)
 rom.o:
 	$(CC)as ./test/rom/rom.s -o ./test/rom/rom.o $(TSF)
 %.s: ./test/%.cpp
@@ -17,9 +19,12 @@ rom.o:
 	$(CC)as ./test/test.s -o ./test/test.o $(TSF)
 	$(CC)ld ./test/test.o ./test/rom/rom.o -o ./test/test.om $(LDF)
 	$(CC)objdump -D ./test/test.om > ./test/test.dump
+	$(CC)objcopy -O binary ./test/test.om ./test/test.bin
+	python ./bin2ascii.py ./test/test.bin ./test/test.ascii
 	$(CC)objcopy -O verilog ./test/test.om ./test/test.dat
 	if [ -f $(TESTSRC)$@.in ]; then cp $(TESTSRC)$@.in ./test/test.in; fi
-	iverilog testbench.v
+	#iverilog testbench.v
+	iverilog testuart.v
 	vvp -l ./vvp.log ./a.out
 	sed -i '/^\(VCD\|WARNING\)/'d ./vvp.log
 	#gtkwave test.vcd

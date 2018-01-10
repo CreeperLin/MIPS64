@@ -1,4 +1,8 @@
-`timescale 1ns / 1ps
+`ifndef UART_COMM_
+`define UART_COMM_
+//`timescale 1ns / 1ps
+`include "buffer.v"
+//`include "fifo.v"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -21,6 +25,7 @@
 
 module uart_comm 
 	#(
+    parameter ID = 1,
 	parameter BAUDRATE = 9600,
 	parameter CLOCKRATE = 100000000
 	)(
@@ -31,7 +36,9 @@ module uart_comm
 	input [7:0] send_data,
 	input recv_flag,
 	output [7:0] recv_data,
-	
+
+    output send_ack, recv_ack,
+    //output reg send_ack, recv_ack,
 	output sendable,
 	output receivable,
 	
@@ -41,16 +48,21 @@ module uart_comm
 
 	reg recv_write_flag;
 	reg [7:0] recv_write_data;
-	wire recv_empty, recv_full;
-	fifo #(.WIDTH(8)) recv_buffer(CLK, RST, recv_flag, recv_data, recv_write_flag, recv_write_data, recv_empty, recv_full);
-
+	wire recv_empty, recv_full, rbuf_rack, rbuf_wack, rbuf_a;
+	//fifo #(.WIDTH(8)) recv_buffer(CLK, RST, recv_flag, recv_data, recv_write_flag, recv_write_data, recv_empty, recv_full);
+    buffer#(.BUF_ID(ID+10),.ADDR_L(5),.DATA_L(8)) recv_buffer
+    (CLK,RST,recv_flag,recv_write_flag,recv_write_data,recv_data,/*rbuf_rack*/recv_ack,rbuf_wack,rbuf_a,recv_full);
+    assign recv_empty = ~rbuf_a;
 	reg send_read_flag;
 	wire [7:0] send_read_data;
 	reg [7:0] send_read_data_buf;
-	wire send_empty, send_full;
-	fifo #(.WIDTH(8)) send_buffer(CLK, RST, send_read_flag, send_read_data, send_flag, send_data, send_empty, send_full);
-
-	assign receivable = !recv_empty;
+	wire send_empty, send_full, sbuf_rack, sbuf_wack, sbuf_a;
+	//fifo #(.WIDTH(8)) send_buffer(CLK, RST, send_read_flag, send_read_data, send_flag, send_data, send_empty, send_full);
+    buffer#(.BUF_ID(ID+11),.ADDR_L(5),.DATA_L(8)) send_buffer
+    (CLK,RST,send_read_flag,send_flag,send_data,send_read_data,sbuf_rack,/*sbuf_wack*/send_ack,sbuf_a,send_full);
+    assign send_empty = ~sbuf_a;
+	//assign receivable = !recv_empty;
+	assign receivable = rbuf_a;
 	assign sendable = !send_full;
 	
 	localparam SAMPLE_INTERVAL = CLOCKRATE / BAUDRATE;
@@ -78,8 +90,10 @@ module uart_comm
 			recv_parity <= 0;
 			recv_counter <= 0;
 			recv_clock <= 0;
+            //recv_ack = 0;
 		end else begin
-			recv_write_flag <= 0;
+            //recv_ack = 0;
+			//recv_write_flag <= 0;
 			if(recv_clock) begin
 				if(recv_counter == SAMPLE_INTERVAL - 1)
 					recv_counter <= 0;
@@ -106,6 +120,7 @@ module uart_comm
 				end
 				
 				STATUS_DATA:begin
+                    //$display("UART:%0d Recv bit %b",ID,Rx);
 					recv_parity <= recv_parity ^ Rx;
 					recv_write_data[recv_bit] <= Rx;
 					recv_bit <= recv_bit + 1;
@@ -120,13 +135,19 @@ module uart_comm
 				end
 				
 				STATUS_END: begin
+                    $display("UART:%0d Received %b",ID,recv_write_data);
 					recv_status <= STATUS_IDLE;
 					recv_clock <= 0;
+                    //recv_ack = 1;
 				end
 				endcase
 			end
 		end
 	end
+
+    always @(posedge rbuf_wack) begin
+        recv_write_flag <= 0;
+    end
 	
 	integer counter;
 	always @(posedge CLK or posedge RST) begin
@@ -153,23 +174,26 @@ module uart_comm
 			send_parity <= 0;
 			tosend <= 0;
 			Tx <= 1;
+            //send_ack = 0;
 		end else begin
-			send_read_flag <= 0;
-			
+			//send_read_flag <= 0;
+			//send_ack = 0;	
 			if(counter == 0) begin
 				case(send_status)
 				STATUS_IDLE:begin
-					if(!send_empty) begin
-						send_read_data_buf <= send_read_data;
-						send_read_flag <= 1;
+					//if(!send_empty) begin
+					if(sbuf_a) begin
+						//send_read_data_buf <= send_read_data;
+						send_read_flag = 1;
 						Tx <= 0;
-						send_status <= STATUS_DATA;
+						//send_status <= STATUS_DATA;
 						send_bit <= 0;
 						send_parity <= 0;
 					end
 				end
 				
 				STATUS_DATA:begin
+                    //$display("UART:%0d Send bit %b",ID,send_read_data_buf[send_bit]);
 					Tx <= send_read_data_buf[send_bit];
 					send_parity <= send_parity ^ send_read_data_buf[send_bit];
 					send_bit <= send_bit + 1;
@@ -183,6 +207,8 @@ module uart_comm
 				end
 				
 				STATUS_END:begin
+                    $display("UART:%0d Sent %b",ID,send_read_data_buf);
+                    //send_ack = 1;
 					Tx <= 1;
 					send_status <= STATUS_IDLE;
 					tosend = 0;
@@ -191,4 +217,12 @@ module uart_comm
 			end
 		end
 	end
+
+    always @(posedge sbuf_rack) begin
+        send_status <= STATUS_DATA;
+		send_read_data_buf <= send_read_data;
+        send_read_flag <= 0;
+    end
+
 endmodule
+`endif

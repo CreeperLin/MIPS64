@@ -111,7 +111,7 @@ always @(posedge clk or posedge rst) begin
         rbuf_we = 0;
         wbuf_we = 0;
         wbuf_re = 0;
-        empty_r_buf;
+        //empty_r_buf;
         c_r_buf[0] = 0;
         c_r_buf[1] = 0;
         c_wack = 0;
@@ -145,7 +145,7 @@ always @(posedge rbuf_rack) begin
     $display("MMU:RBUF p:%b l:%d a:%x",rb_port,rb_rlen,rb_raddr);
     rbuf_re = 0;
     c_r_buf[rb_port] = 0;
-    empty_r_buf;
+    //empty_r_buf;
     m_raddr = rb_raddr;
     m_rlen = rb_rlen;
     //i = 0;    
