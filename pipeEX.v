@@ -49,7 +49,7 @@ assign rw_len_out = rw_len_in;
 assign wb_e_out = wb_e_in;
 assign wb_idx_out = rd;
 
-assign EX_fwd_idx = wb_e_in ? rd : 0;
+assign EX_fwd_idx = (wb_e_in&&!rw_e_in) ? rd : 0;
 assign EX_fwd_val = ans;
 //assign jp_e_out = (br_e_in && ans[0]) || jp_e_in;
 //assign jp_pc = ans;
@@ -126,6 +126,7 @@ always @(posedge buf_rack) begin
         end
         default: opr2 = opr2_in;
     endcase
+    $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d val:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1,opr2,val_in,c_in,ans,jp_e_out,jp_pc);
     run_alu(op_in,opr1,opr2,c_in);
     state = STATE_OPR_CAL;
 end
@@ -157,7 +158,6 @@ always @(posedge alu_ack) begin
             end else begin
                 buf_we = 1;        
             end
-            $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1_in,opr2_in,c_in,ans,jp_e_out,jp_pc);
         end
         STATE_BADDR_CAL: begin
             jp_pc = ans;
@@ -174,6 +174,7 @@ end
 
 always @(posedge buf_wack) begin
     buf_we = 0;
+    buf_re = buf_avail ? 1 : 0;
 end
 
 always @(posedge jp_ack) begin

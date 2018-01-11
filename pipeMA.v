@@ -33,7 +33,7 @@ module pipeMA
 assign wb_e = ex_wb_e;
 assign wb_idx = ex_wb_idx;
 
-assign MA_fwd_idx = ((rw_e==2'b11)||(rw_e==2'b10)) ? ex_wb_idx : 0;
+assign MA_fwd_idx = ((state==STATE_IDLE)&&((rw_e==2'b11)||(rw_e==2'b10))) ? ex_wb_idx : 0;
 assign MA_fwd_val = wb_out;
 
 localparam STATE_B      = 3;
@@ -51,7 +51,7 @@ always @(posedge clk or posedge rst) begin
         co_re = 0;
         co_rlen = 0;
         co_wlen = 0;
-        state = 0;
+        state = STATE_IDLE;
         //stg_ack = 0;
         //co_wlen <= 0;
         //co_rlen <= 0;
@@ -61,7 +61,8 @@ always @(posedge clk or posedge rst) begin
 end
 
 always @(posedge buf_avail) begin
-    buf_re = 1;
+    if (state==STATE_IDLE)
+        buf_re = 1;
 end
 
 always @(posedge buf_rack) begin
@@ -89,6 +90,7 @@ always @(posedge buf_rack) begin
     2'b00: begin
         wb_out = ex_ans;
         $display("MA:None");
+        state = STATE_IDLE;
         buf_we = 1;
     end
     default: $display("MA:ERROR");
@@ -97,6 +99,7 @@ end
 
 always @(posedge buf_wack) begin
     buf_we = 0;
+    buf_re = buf_avail ? 1 : 0;
 end
 
 always @(posedge co_rack) begin
@@ -123,7 +126,9 @@ always @(posedge co_rack) begin
         default: $display("MA:ERROR rack");
     endcase
     co_re = 0;
+    state = STATE_IDLE;
     buf_we = 1;
+    //buf_re = buf_avail ? 1 : 0;
 end
 always @(posedge co_wack) begin
     co_we = 0;
@@ -133,6 +138,8 @@ always @(posedge co_wack) begin
         end
         default: $display("MA:ERROR wack");
     endcase
+    state = STATE_IDLE;
     buf_we = 1;
+    //buf_re = buf_avail ? 1 : 0;
 end
 endmodule

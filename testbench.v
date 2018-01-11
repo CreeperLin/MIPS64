@@ -22,14 +22,12 @@ initial begin
     $dumpvars(0,cpu);
     $dumpvars(0,mem);
     $dumpvars(0,mctrl);
-    rst = 0;
-    clk = 0;
     rst = 1;
-    //repeat(100) #1 clk=!clk;
     #100;
+    //repeat(100) #1 clk=!clk;
     rst = 0;
     //forever #1 fclk=!fclk;
-    repeat(10000) #1 fclk=!fclk;
+    repeat(100000) #1 fclk=!fclk;
     //#500000;
     //$display("CPU TIMEOUT");
     //$finish;
