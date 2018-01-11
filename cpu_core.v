@@ -144,8 +144,9 @@ pipeIF pIF(clk,rst,~rst,buf_we[0],buf_wack[0],buf_fu[0],
 //assign buf_i0 = {IF_inst,IF_pc};
 wire[4:0] EX_fwd_idx, MA_fwd_idx;
 wire[31:0] EX_fwd_val, MA_fwd_val;
-wire MA_ack;
+wire MA_ack,EX_ack;
 assign MA_ack = buf_we[3];
+assign EX_ack = buf_we[2];
 //wire[6:0] ID_op;
 //wire[4:0] ID_alu_op;
 //wire ID_alu_c;
@@ -161,7 +162,7 @@ pipeID pID(clk,rst,buf_av[0],buf_re[0],buf_we[1],buf_rack[0],buf_wack[1],
     buf_i1[134:103],buf_i1[102:71],buf_i1[70:39],
     buf_i1[38],buf_i1[37],buf_i1[36],buf_i1[35:34],buf_i1[33:32],
     MA_fwd_idx,MA_fwd_val,
-    EX_fwd_idx,EX_fwd_val,MA_ack);
+    EX_fwd_idx,EX_fwd_val,MA_ack,EX_ack);
 
 //assign buf_i1 = {ID_alu_op,ID_alu_c,
     //ID_rd,ID_rs1,ID_rs2,ID_opr1,ID_opr2,ID_val,

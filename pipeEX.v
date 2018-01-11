@@ -126,14 +126,14 @@ always @(posedge buf_rack) begin
         end
         default: opr2 = opr2_in;
     endcase
-    $display("EX: alu_op:%d rd:%d opr1:%d opr2:%d val:%d c:%d ans:%d jp_e: %d jp_pc:%x",op_in,rd,opr1,opr2,val_in,c_in,ans,jp_e_out,jp_pc);
+    $display("EX:%x alu_op:%d rd:%d opr1:%d opr2:%d val:%d c:%d ans:%d jp_e: %d jp_pc:%x",pc_in,op_in,rd,opr1,opr2,val_in,c_in,ans,jp_e_out,jp_pc);
     run_alu(op_in,opr1,opr2,c_in);
     state = STATE_OPR_CAL;
 end
 
 always @(posedge alu_ack) begin
     alu_run = 0;
-    $display("ALU:op:%d A:%d B:%d c:%d Y:%d",alu_op,alu_opr1,alu_opr2,alu_c,ans);
+    $display("ALU:%x op:%d A:%d B:%d c:%d Y:%d",pc_in,alu_op,alu_opr1,alu_opr2,alu_c,ans);
     case (state)
         STATE_IDLE: begin $display("EX:Idle");
         end
