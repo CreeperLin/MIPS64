@@ -38,6 +38,7 @@ module pipeID
     input[31:0] EX_fwd_val,
     input MA_ack,EX_ack
 );
+reg[4:0] rd_lock;
 reg[31:0] reg_lock;
 reg[31:0] reg_lock_pend;
 reg signed[REG_SZ-1:0] t_opr[2:0];
@@ -147,6 +148,7 @@ always @(posedge clk or posedge rst) begin
         nstate = STATE_IDLE;
         wait_end = 0;
         reg_re = 0;
+        rd_lock = 0;
         for (i=0;i<32;i=i+1) begin
             reg_lock[i] <= 0;
             reg_lock_pend[i] <= 0;
@@ -159,8 +161,7 @@ end
 task lock_reg;
     input[4:0] t_idx;
     if (t_idx) begin
-        reg_lock_pend[t_idx] = reg_lock[t_idx] ? 1 : 0;
-        reg_lock[t_idx] = 1;
+        rd_lock = t_idx;
         $display("ID:REG %d locked",t_idx);
     end
 endtask
@@ -210,7 +211,9 @@ end
 always @(posedge buf_avail) begin
     if (state == STATE_IDLE)
         buf_re = 1;
-    else $display("ID:Busy %d",state);
+    else begin 
+        $display("ID:Busy %d",state);
+    end
 end
 
 always @(posedge buf_rack) begin
@@ -445,6 +448,11 @@ always @(posedge reg_rack) begin
 end
 
 always @(posedge buf_wack) begin
+    if (rd_lock) begin
+        reg_lock_pend[rd_lock] = reg_lock[rd_lock] ? 1 : 0;
+        reg_lock[rd_lock] = 1;
+        rd_lock = 0;
+    end
     buf_we = 0;
     buf_re = buf_avail ? 1 : 0;
 end

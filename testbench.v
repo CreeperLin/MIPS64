@@ -6,7 +6,7 @@ module testbench;
 parameter MADDR_L = 32;
 parameter M_DATA_L = 8;
 parameter C_DATA_L = 32;
-reg fclk, clk, rst;
+reg clk, rst;
 wire[M_DATA_L-1:0] m_din, m_dout;
 wire[M_DATA_L-1:0] c_din, c_dout;
 wire[MADDR_L-1:0] c_waddr, c_raddr;
@@ -27,7 +27,6 @@ initial begin
     //repeat(100) #1 clk=!clk;
     rst = 0;
     //forever #1 fclk=!fclk;
-    repeat(100000) #1 fclk=!fclk;
     //#500000;
     //$display("CPU TIMEOUT");
     //$finish;
