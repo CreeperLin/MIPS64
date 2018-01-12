@@ -1,6 +1,8 @@
 /*ALU*/
+`ifndef ALU_H_
+`define ALU_H_
 `include "alu_opcode.v"
-module alu 
+module c_alu 
 #(
     parameter OPR_L = 32,
     parameter ST_L = 3
@@ -65,69 +67,70 @@ always @(negedge run) begin
 end
 endmodule
 
-module alu_mult_ctrl
-#(
-    parameter OPR_L = 32,
-    parameter ALUOP_L = 5
-)
-(
-    input clk,rst,
-    input[OPR_L-1:0] A, B,
+//module alu_mult_ctrl
+//#(
+    //parameter OPR_L = 32,
+    //parameter ALUOP_L = 5
+//)
+//(
+    //input clk,rst,
+    //input[OPR_L-1:0] A, B,
     
-    output reg[OPR_L-1:0] alu_A, alu_B,
-    output reg[ALUOP_L-1:0] alu_op,
-    input[OPR_L-1:0] alu_Y,
+    //output reg[OPR_L-1:0] alu_A, alu_B,
+    //output reg[ALUOP_L-1:0] alu_op,
+    //input[OPR_L-1:0] alu_Y,
 
-    output reg[2*OPR_L-1:0] Y
-);
-//alu a1();
-//fast add
-reg[2*OPR_L-1:0] tmp;
-integer i;
-always @(posedge clk or posedge rst) begin
-    if (rst) begin
-        alu_A <= 0;
-        alu_B <= 0;
-        alu_op <= 0;
-        Y <= 0;
-        tmp <= 0;
-    end else begin
-        tmp <= B;
-        for (i=0;i<OPR_L;i=i+1) begin
-            if (A[i]==1'b1) begin
-                Y = Y + tmp;
-                //alu_op = `ALU_ADD;
-                //alu_A = tmp;
-                //alu_B = Y;
-                //#1;
-                //Y = tmp;
-            end
-            tmp = tmp + tmp;
-            //alu_op = `ALU_ADD;
-            //alu_A = tmp;
-            //alU_B = tmp;
-            //#1;
-            //tmp = alu_Y;
-        end
-    end
-end
+    //output reg[2*OPR_L-1:0] Y
+//);
+////alu a1();
+////fast add
+//reg[2*OPR_L-1:0] tmp;
+//integer i;
+//always @(posedge clk or posedge rst) begin
+    //if (rst) begin
+        //alu_A <= 0;
+        //alu_B <= 0;
+        //alu_op <= 0;
+        //Y <= 0;
+        //tmp <= 0;
+    //end else begin
+        //tmp <= B;
+        //for (i=0;i<OPR_L;i=i+1) begin
+            //if (A[i]==1'b1) begin
+                //Y = Y + tmp;
+                ////alu_op = `ALU_ADD;
+                ////alu_A = tmp;
+                ////alu_B = Y;
+                ////#1;
+                ////Y = tmp;
+            //end
+            //tmp = tmp + tmp;
+            ////alu_op = `ALU_ADD;
+            ////alu_A = tmp;
+            ////alU_B = tmp;
+            ////#1;
+            ////tmp = alu_Y;
+        //end
+    //end
+//end
 
-endmodule
+//endmodule
 
-module alu_div_ctrl
-#(
-    parameter OPR_L = 32,
-    parameter ALUOP_L = 5
-)
-(
-    input clk,rst,
-    input[OPR_L-1:0] A, B,
+//module alu_div_ctrl
+//#(
+    //parameter OPR_L = 32,
+    //parameter ALUOP_L = 5
+//)
+//(
+    //input clk,rst,
+    //input[OPR_L-1:0] A, B,
     
-    output reg[OPR_L-1:0] alu_A, alu_B,
-    output reg[ALUOP_L-1:0] alu_op,
-    input[OPR_L-1:0] alu_Y,
+    //output reg[OPR_L-1:0] alu_A, alu_B,
+    //output reg[ALUOP_L-1:0] alu_op,
+    //input[OPR_L-1:0] alu_Y,
 
-    output reg[OPR_L-1:0] Y
-);
+    //output reg[OPR_L-1:0] Y
+//);
 
-endmodule
+//endmodule
+`endif

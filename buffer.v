@@ -19,16 +19,16 @@ localparam BUF_DEPTH = 1 << ADDR_L;
 reg[DATA_L-1:0] data[BUF_DEPTH-1:0];
 reg unsigned[ADDR_L-1:0] rpt;
 reg unsigned[ADDR_L-1:0] wpt;
-wire unsigned[ADDR_L-1:0] winc;
+//wire unsigned[ADDR_L-1:0] winc;
 //reg[ADDR_L:0] sz;
-assign winc = wpt + 1'b1;
-assign full = (winc == rpt);
+//assign winc = wpt + 1'b1;
+assign full = (wpt+1 == rpt);
 assign avail = (rpt != wpt);
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        dout <= 0;
-        rpt <= 0;
-        wpt <= 0;
+        dout = 0;
+        rpt = 0;
+        wpt = 0;
         r_ack = 0;
         w_ack = 0;
     end else begin

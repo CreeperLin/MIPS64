@@ -18,9 +18,9 @@
     * Extras:
         * Branch Prediction
 */
+//`define CACHE_E_
 `include "def.v"
 `include "buffer.v"
-`include "cache.v"
 `include "regfile.v"
 `include "pipeIF.v"
 `include "pipeID.v"
@@ -28,6 +28,9 @@
 `include "pipeMA.v"
 `include "pipeWB.v"
 `include "b_predictor.v"
+`ifdef CACHE_E_
+`include "cache.v"
+`endif
 /*Components*/
 module cpu_core
 #(
@@ -45,7 +48,9 @@ module cpu_core
     output[R_PORT*`RW_LEN_L] co_rlen,
     output[W_PORT*`RW_LEN_L] co_wlen,
     input[R_PORT-1:0] co_rack,
-    input[W_PORT-1:0] co_wack
+    input[W_PORT-1:0] co_wack,
+    //output[3:0] led,
+    input btn
 );
 localparam BUF_SZ_0 = 5;
 localparam BUF_SZ_1 = 5;
@@ -57,6 +62,11 @@ localparam BUF_L_2 = 74;
 localparam BUF_L_3 = 38;
 
 wire[3:0] buf_re, buf_we, buf_av, buf_fu, buf_rack,buf_wack;
+//assign led[0] = buf_we[0];
+//assign led[1] = buf_we[1];
+//assign led[2] = buf_we[2];
+//assign led[3] = buf_we[3];
+
 
 wire[BUF_L_0-1:0] buf_i0,buf_o0;
 wire[BUF_L_1-1:0] buf_i1,buf_o1;
@@ -103,7 +113,6 @@ wire[W_PORT-1:0] ca_wack;
 wire[`C_DATA_L] c0_plh0;
 wire c0_plh1;
 wire[1:0] c0_plh2; 
-//`define CACHE_E_
 `ifdef CACHE_E_
 cache#(.ID(0),.WORD_B(2),.IDX_B(5),.SET(2))
 c0(clk,rst,/*ca_din[`C_DATA_L]*/ 0,ca_dout[`C_DATA_L],
@@ -141,7 +150,7 @@ pipeIF pIF(clk,rst,sig_loop,buf_we[0],buf_wack[0],
 `else
     co_din[`C_DATA_L],co_raddr[`M_ADDR_L],co_re[`RW_E_L],co_rlen[`RW_LEN_L],co_rack[0],
 `endif
-    buf_i0[63:32],buf_i0[31:0],bp_tag_q,bp_t_out);
+    buf_i0[63:32],buf_i0[31:0],bp_tag_q,bp_t_out,btn);
 
 //assign buf_i0 = {IF_inst,IF_pc};
 wire[4:0] EX_fwd_idx, MA_fwd_idx;

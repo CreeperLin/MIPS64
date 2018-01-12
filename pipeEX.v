@@ -60,7 +60,7 @@ reg[REG_SZ-1:0] alu_opr1,alu_opr2;
 reg[`ALUOP_L] alu_op;
 reg alu_c, alu_run;
 wire alu_ack;
-alu alu1(clk,rst,alu_run,alu_opr1,alu_opr2,alu_c,alu_op,ans,st,alu_ack);
+c_alu alu1(clk,rst,alu_run,alu_opr1,alu_opr2,alu_c,alu_op,ans,st,alu_ack);
 
 localparam STATE_B          = 3;
 localparam STATE_IDLE       = 0;

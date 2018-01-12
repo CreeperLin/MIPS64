@@ -125,6 +125,8 @@ always @(posedge clk or posedge rst) begin
         m_dout = 0;
         //rbuf_din = 0;
     end else begin
+        rbuf_re = (rb_a&(!rbuf_re)) ? 1 : 0;
+        wbuf_re = (wb_a&(!wbuf_re)) ? 1 : 0;
     end
 end
 reg unsigned[3:0] i,j,k,l;

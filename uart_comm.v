@@ -186,7 +186,7 @@ module uart_comm
 						//send_read_data_buf <= send_read_data;
 						send_read_flag = 1;
 						Tx <= 0;
-						//send_status <= STATUS_DATA;
+                        send_status <= STATUS_DATA;
 						send_bit <= 0;
 						send_parity <= 0;
 					end
@@ -219,7 +219,7 @@ module uart_comm
 	end
 
     always @(posedge sbuf_rack) begin
-        send_status <= STATUS_DATA;
+        //send_status <= STATUS_DATA;
 		send_read_data_buf <= send_read_data;
         send_read_flag <= 0;
     end

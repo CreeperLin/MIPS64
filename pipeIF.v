@@ -29,7 +29,7 @@ module pipeIF
     //output [PC_L-1:0] nxpc 
     output reg[PC_L-1:0] pc_out,
     output reg[10-1:0] bp_tag_q,
-    input bp_t
+    input bp_t, sig_b
 );
 
 reg sig_s;
@@ -70,16 +70,23 @@ always @(posedge clk or posedge rst) begin
         jp_ack = 0;
         //fetch_inst;
     end else begin
-
+        //if (stall) begin
+            //$display("IF: stalled");
+        //end else if (!m_re) begin
+            //pc = nxpc;
+            //pc_out = nxpc;
+            ////fetch_inst;
+            //m_re = 1;
+        //end
     end
 end
 
 //always @(posedge sig_e) begin
 //always @(sig_e or posedge sig_s) begin
-always @(sig_e or sig_s) begin
+always @(posedge sig_b) begin
     if (stall) begin
         $display("IF: stalled");
-    end else begin
+    end else if (!m_re) begin
         pc = nxpc;
         pc_out = nxpc;
         //fetch_inst;
@@ -109,7 +116,7 @@ end
 
 always @(posedge m_rack) begin
     inst = datain;
-    m_re = 0;
+    //m_re = 0;
     $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
     case (inst[6:0])
         `OP_JAL, `OP_JALR: begin

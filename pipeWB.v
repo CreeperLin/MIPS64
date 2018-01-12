@@ -20,8 +20,8 @@ always @(posedge clk or posedge rst) begin
         buf_re <= 0;
         dout <= 0;
         idxout <= 0;
-        #100;
-        sig_e = 1;
+        //#100;
+        //sig_e = 1;
     end else begin
 
     end

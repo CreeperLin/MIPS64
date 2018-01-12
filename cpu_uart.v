@@ -11,48 +11,73 @@ module riscv_cpu
     parameter WPORT = CORE
 )
 (
-    input clk, rst,
+    input clk_in, btnC,
     input Rx,
-    output Tx
+    output Tx,
+    input btnU,
+    output reg[10:0] disp_out,
+    output [15:0] led_out
 );
+wire clk;
+wire rst;
+assign rst = btnC;
+clk_wiz_0 clk_wiz(clk, rst, 1'b0, clk_in);
+
 //mem_ctrl mctrl(data_in,data_out,read_addr,write_addr,c1_din,c1_dout,c1_raddr,c1_waddr);
 //cpu_core core1(c1_din,c1_dout,c1_raddr,c1_waddr);
-wire[RPORT * `RW_E_L] co_re;
-wire[WPORT * `RW_E_L] co_we;
+/*(*mark_debug = "true"*)*/wire[RPORT * `RW_E_L] co_re;
+/*(*mark_debug = "true"*)*/wire[WPORT * `RW_E_L] co_we;
 wire[RPORT * `RW_LEN_L] co_rlen;
 wire[WPORT * `RW_LEN_L] co_wlen;
 wire[RPORT * `C_DATA_L] co_din;
 wire[WPORT * `C_DATA_L] co_dout;
 wire[RPORT * `M_ADDR_L] co_raddr;
 wire[WPORT * `M_ADDR_L] co_waddr;
-wire[RPORT-1:0] co_rack;
-wire[WPORT-1:0] co_wack;
+/*(*mark_debug = "true"*)*/wire[RPORT-1:0] co_rack;
+/*(*mark_debug = "true"*)*/wire[WPORT-1:0] co_wack;
 
 wire[`C_DATA_L] data_in;
 wire[`C_DATA_L] data_out;
 wire[`M_ADDR_L] read_addr;
 wire[`M_ADDR_L] write_addr;
-wire c_re, c_we;
+/*(*mark_debug = "true"*)*/wire c_re, c_we;
 wire[`RW_LEN_L] c_rlen,c_wlen;
-wire m_rack, m_wack;
+/*(*mark_debug = "true"*)*/wire m_rack, m_wack;
 
 wire[`M_DATA_L] u_send, u_recv;
-wire u_re, u_se, u_rack, u_sack, u_ra, u_sa;
+/*(*mark_debug = "true"*)*/wire u_re, u_se, u_rack, u_sack, u_ra, u_sa;
 
 cpu_core core0(clk,rst,co_din[2*`C_DATA_L],co_dout[`C_DATA_L],
     co_raddr[2*`M_ADDR_L],co_waddr[`M_ADDR_L],
-    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L],co_rack,co_wack);
+    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L],co_rack,co_wack,/*led_out[3:0],*/btnU);
 //mmu mmu(clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,m_rack,m_wack,
 mmu_uart mmu_u(clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,c_rlen,c_wlen,m_rack,m_wack,
     co_dout,co_din,co_raddr,co_waddr,co_re,co_we,co_rlen,co_wlen,co_rack,co_wack);
 
 mem_ctrl_uart mctrl_u(clk,rst,u_recv,u_send,u_re,u_se,u_rack,u_sack,u_ra,u_sa,data_out,data_in,read_addr,write_addr,c_re,c_we,c_rlen,c_wlen,m_rack,m_wack);
-uart_comm#(.ID(1), .BAUDRATE(5000000/*115200*/), .CLOCKRATE(66667000)) uart(clk,rst,u_se,u_send,u_re,u_recv,u_sack,u_rack,u_sa,u_ra,Tx,Rx);
+uart_comm#(.ID(1), .BAUDRATE(9600/*115200*/), .CLOCKRATE(100000000)) uart(clk,rst,u_se,u_send,u_re,u_recv,u_sack,u_rack,u_sa,u_ra,Tx,Rx);
+assign led_out[15] = clk;
+assign led_out[14] = rst;
+assign led_out[13] = Rx;
+assign led_out[12] = Tx;
+assign led_out[11] = co_re[0];
+assign led_out[10] = co_rack[0];
+assign led_out[9] = c_re;
+assign led_out[8] = c_we;
+assign led_out[7] = co_we;
+assign led_out[6] = co_wack;
+assign led_out[5] = m_rack;
+assign led_out[4] = m_wack;
+assign led_out[3] = u_se;
+assign led_out[2] = u_sa;
+assign led_out[1] = u_sack;
+assign led_out[0] = u_ra;
+
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-
+        disp_out <= 11'b0111_1001111;
     end else begin
-
+        disp_out <= 11'b1011_0010010;
     end
 end
 endmodule
