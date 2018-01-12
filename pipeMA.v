@@ -98,6 +98,7 @@ always @(posedge buf_rack) begin
 end
 
 always @(posedge buf_wack) begin
+    $display("MA:Fwd %d %d",MA_fwd_idx,MA_fwd_val);
     buf_we = 0;
     buf_re = buf_avail ? 1 : 0;
 end

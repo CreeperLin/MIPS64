@@ -38,6 +38,7 @@ module pipeID
     input[31:0] EX_fwd_val,
     input MA_ack,EX_ack
 );
+reg[31:0] reg_fwd[31:0];
 reg[4:0] rd_lock;
 reg[31:0] reg_lock;
 reg[31:0] reg_lock_pend;
@@ -69,9 +70,6 @@ assign wb_e = !(op==`OP_BRANCH || op==`OP_STORE || op==`OP_SYSTEM);
 assign jp_e = (op==`OP_JAL) || (op==`OP_JALR);
 assign br_e = (op==`OP_BRANCH);
 
-reg[31:0] MA_fv, EX_fv;
-reg[4:0] MA_fi, EX_fi;
-
 reg[5:0] wait_idx;
 reg[2:0] wait_opr;
 
@@ -85,33 +83,36 @@ begin
             t_opr[oidx] = 0;
             state = STATE_IDLE;
         end
-        MA_fi: begin 
-            t_opr[oidx] = MA_fv;
-            MA_fi = 0;
-            $display("ID:fwdMA %d %d",idx,t_opr[oidx]);
-            state = STATE_IDLE;
-        end
-        EX_fi: begin
-            t_opr[oidx] = EX_fv;
-            EX_fi = 0;
-            state = STATE_IDLE;
-            $display("ID:fwdEX %d %d",idx,t_opr[oidx]);
-        end
+        //MA_fi: begin 
+            //t_opr[oidx] = MA_fv;
+            //MA_fi = 0;
+            //$display("ID:fwdMA %d %d",idx,t_opr[oidx]);
+            //state = STATE_IDLE;
+        //end
+        //EX_fi: begin
+            //t_opr[oidx] = EX_fv;
+            //EX_fi = 0;
+            //state = STATE_IDLE;
+            //$display("ID:fwdEX %d %d",idx,t_opr[oidx]);
+        //end
         default: begin
+            if (reg_lock[idx]) begin
             case (oidx)
             0: state = STATE_F0;
             1: state = STATE_F1;
             2: state = STATE_F2;
             endcase
-            if (reg_lock[idx]) begin
+            //if (reg_lock[idx]) begin
                 nstate = state;
                 state = STATE_WAITMA;
                 wait_opr = oidx;
                 wait_idx = idx;
                 $display("ID:DATA STALL %d", idx);
             end else begin
-                reg_idx = idx;
-                reg_re = 1;
+                //reg_idx = idx;
+                //reg_re = 1;
+                t_opr[oidx] = reg_fwd[idx];
+                state = STATE_IDLE;
             end
         end
     endcase
@@ -131,10 +132,6 @@ reg wait_end;
 integer i;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        MA_fv <=0;
-        EX_fv <=0;
-        MA_fi <=0;
-        EX_fi <=0;
         t_opr[0] <= 0;
         t_opr[1] <= 0;
         t_opr[2] <= 0;
@@ -150,6 +147,7 @@ always @(posedge clk or posedge rst) begin
         reg_re = 0;
         rd_lock = 0;
         for (i=0;i<32;i=i+1) begin
+            reg_fwd[i] <= 0;
             reg_lock[i] <= 0;
             reg_lock_pend[i] <= 0;
         end
@@ -168,42 +166,35 @@ endtask
 
 always @(posedge EX_ack) begin
     $display("ID:EXFWD %d %d %d",EX_fwd_idx,EX_fwd_val,reg_lock[EX_fwd_idx]);
+    reg_fwd[EX_fwd_idx] = EX_fwd_val;
     if (EX_fwd_idx!=0 && reg_lock[EX_fwd_idx]) begin
         reg_lock[EX_fwd_idx] = reg_lock_pend[EX_fwd_idx] ? 1 : 0;
         reg_lock_pend[EX_fwd_idx] = 0; 
         $display("ID:REG %d unlocked %d",EX_fwd_idx,reg_lock[EX_fwd_idx]);
         if (wait_idx==EX_fwd_idx) begin
-            EX_fi = 0;
             t_opr[wait_opr] = EX_fwd_val;
             $display("ID:Wait end %d %d %d",wait_opr,t_opr[wait_opr],state);
             wait_idx = 6'b111111;
             wait_opr = 3'b111;
             state = nstate;
             wait_end = 1;
-        end else begin
-            EX_fi = EX_fwd_idx;
-            EX_fv = EX_fwd_val;
         end
     end
 end
 always @(posedge MA_ack) begin
+    reg_fwd[MA_fwd_idx] = MA_fwd_val;
     $display("ID:MAFWD %d %d %d",MA_fwd_idx,MA_fwd_val,reg_lock[MA_fwd_idx]);
     if (MA_fwd_idx!=0 && reg_lock[MA_fwd_idx]) begin
         reg_lock[MA_fwd_idx] = reg_lock_pend[MA_fwd_idx] ? 1 : 0;
         reg_lock_pend[MA_fwd_idx] = 0; 
         $display("ID:REG %d unlocked %d",MA_fwd_idx,reg_lock[MA_fwd_idx]);
         if (wait_idx==MA_fwd_idx) begin
-            MA_fi = 0;
             t_opr[wait_opr] = MA_fwd_val;
             $display("ID:Wait end %d %d %d",wait_opr,t_opr[wait_opr],state);
             wait_idx = 6'b111111;
             wait_opr = 3'b111;
             state = nstate;
             wait_end = 1;
-            //$display("ID: %d %d %d",opr1,opr2,val);
-        end else begin
-            MA_fi = MA_fwd_idx;
-            MA_fv = MA_fwd_val;
         end
     end
 end

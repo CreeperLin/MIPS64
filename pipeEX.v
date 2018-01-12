@@ -39,6 +39,7 @@ module pipeEX
     input bp_wack,
     input[4:0] MA_fwd_idx,
     input[31:0] MA_fwd_val,
+    input MA_ack,
     output[4:0] EX_fwd_idx,
     output[31:0] EX_fwd_val
 );
@@ -84,6 +85,8 @@ begin
 end
 endtask
 
+reg[4:0] MA_fi;
+reg[31:0] MA_fv;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         jp_e_out <= 0;
@@ -97,6 +100,8 @@ always @(posedge clk or posedge rst) begin
         bp_we <= 0;
         bp_t_out <= 0;
         state = STATE_IDLE;
+        MA_fi <= 0;
+        MA_fv <= 0;
     end else begin
 
     end
@@ -106,26 +111,33 @@ always @(posedge buf_avail) begin
     buf_re = 1;
 end
 
+always @(posedge MA_ack) begin
+    MA_fi = MA_fwd_idx;
+    MA_fv = MA_fwd_val;
+    $display("EX:MA fwd %d %d",MA_fi,MA_fv);
+end
+
 always @(posedge buf_rack) begin
     buf_re = 0;
     opr1 = 0;
     opr2 = 0;
     case (rs1)
         5'b0: opr1 = opr1_in;
-        MA_fwd_idx: begin
-            opr1 = MA_fwd_val;
+        MA_fi: begin
+            opr1 = MA_fv;
             $display("EX:fwdMA %d %d",rs1,opr1);
         end
         default: opr1 = opr1_in;
     endcase
     case (rs2)
         5'b0: opr2 = opr2_in;
-        MA_fwd_idx: begin
-            opr2 = MA_fwd_val;
+        MA_fi: begin
+            opr2 = MA_fv;
             $display("EX:fwdMA %d %d",rs2,opr2);
         end
         default: opr2 = opr2_in;
     endcase
+    MA_fi = 0;
     $display("EX:%x alu_op:%d rd:%d opr1:%d opr2:%d val:%d c:%d ans:%d jp_e: %d jp_pc:%x",pc_in,op_in,rd,opr1,opr2,val_in,c_in,ans,jp_e_out,jp_pc);
     run_alu(op_in,opr1,opr2,c_in);
     state = STATE_OPR_CAL;

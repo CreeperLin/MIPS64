@@ -182,7 +182,7 @@ pipeEX pEX(clk,rst,buf_av[1],buf_re[1],buf_we[2],buf_rack[1],buf_wack[2],
     buf_o1[36],buf_i2[9],buf_i2[8:4],
     buf_o1[38],buf_o1[37],EX_jp_e,EX_nxpc,IF_jp_ack,
     bp_tag_in,bp_t_in,bp_we,bp_wack,
-    MA_fwd_idx,MA_fwd_val,
+    MA_fwd_idx,MA_fwd_val,MA_ack,
     EX_fwd_idx,EX_fwd_val);
 
 //assign buf_i2 = {EX_ans,EX_dout,EX_wb_e,EX_wb_idx,EX_rw_e,EX_rw_len};
