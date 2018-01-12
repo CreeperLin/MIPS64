@@ -26,7 +26,7 @@ module pipeID
     output reg alu_c,
     output[4:0] rd,
     output reg[4:0] rs1_out,rs2_out,
-    output reg signed[REG_SZ-1:0] opr1,opr2,val,
+    output signed[REG_SZ-1:0] opr1,opr2,val,
     //output reg signed[31:0] imm,
     output jp_e, br_e, wb_e,
     //output reg wb_e,
@@ -35,8 +35,17 @@ module pipeID
     input[4:0] MA_fwd_idx,
     input[31:0] MA_fwd_val,
     input[4:0] EX_fwd_idx,
-    input[31:0] EX_fwd_val
+    input[31:0] EX_fwd_val,
+    input MA_ack,EX_ack
 );
+reg[31:0] reg_fwd[31:0];
+reg[4:0] rd_lock;
+reg[31:0] reg_lock;
+reg[31:0] reg_lock_pend;
+reg signed[REG_SZ-1:0] t_opr[2:0];
+assign opr1 = t_opr[0];
+assign opr2 = t_opr[1];
+assign val = t_opr[2];
 //wire[4:0] shamt;
 wire[6:0] op;
 wire[4:0] rs1, rs2;
@@ -61,23 +70,50 @@ assign wb_e = !(op==`OP_BRANCH || op==`OP_STORE || op==`OP_SYSTEM);
 assign jp_e = (op==`OP_JAL) || (op==`OP_JALR);
 assign br_e = (op==`OP_BRANCH);
 
+reg[5:0] wait_idx;
+reg[2:0] wait_opr;
+
 task fetch_reg;
 input[4:0] idx;
-output reg[REG_SZ-1:0] dout;
+input[2:0] oidx;
+//output reg[REG_SZ-1:0] dout;
 begin
     case (idx)
-        5'b0: dout = 0;
-        MA_fwd_idx: begin 
-            dout = MA_fwd_val;
-            $display("ID:fwdMA %d %d",idx,dout);
+        5'b0: begin
+            t_opr[oidx] = 0;
+            state = STATE_IDLE;
         end
-        EX_fwd_idx: begin
-            dout = EX_fwd_val;
-            $display("ID:fwdEX %d %d",idx,dout);
-        end
+        //MA_fi: begin 
+            //t_opr[oidx] = MA_fv;
+            //MA_fi = 0;
+            //$display("ID:fwdMA %d %d",idx,t_opr[oidx]);
+            //state = STATE_IDLE;
+        //end
+        //EX_fi: begin
+            //t_opr[oidx] = EX_fv;
+            //EX_fi = 0;
+            //state = STATE_IDLE;
+            //$display("ID:fwdEX %d %d",idx,t_opr[oidx]);
+        //end
         default: begin
-            reg_idx = idx;
-            reg_re = 1;
+            if (reg_lock[idx]) begin
+            case (oidx)
+            0: state = STATE_F0;
+            1: state = STATE_F1;
+            2: state = STATE_F2;
+            endcase
+            //if (reg_lock[idx]) begin
+                nstate = state;
+                state = STATE_WAITMA;
+                wait_opr = oidx;
+                wait_idx = idx;
+                $display("ID:DATA STALL %d", idx);
+            end else begin
+                //reg_idx = idx;
+                //reg_re = 1;
+                t_opr[oidx] = reg_fwd[idx];
+                state = STATE_IDLE;
+            end
         end
     endcase
 end
@@ -85,30 +121,90 @@ endtask
 
 localparam STATE_B      = 3;
 localparam STATE_IDLE   = 0;
-localparam STATE_F1     = 1;
-localparam STATE_F2     = 2;
-localparam STATE_FV     = 3;
-reg[STATE_B-1:0] state;
+localparam STATE_F0     = 1;
+localparam STATE_F1     = 2;
+localparam STATE_F2     = 3;
+localparam STATE_WAITMA = 4;
+reg[STATE_B-1:0] state,nstate;
 
+reg wait_end;
+
+integer i;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
+        t_opr[0] <= 0;
+        t_opr[1] <= 0;
+        t_opr[2] <= 0;
         buf_re <= 0;
         buf_we <=0;
-        opr1 <= 0;
-        opr2 <= 0;
-        val <=0;
         //wb_e <= 0;
         rw_e <= 0;
         rw_len <= 0;
         alu_c <= 0;
-        state = 0;
+        state = STATE_IDLE;
+        nstate = STATE_IDLE;
+        wait_end = 0;
+        reg_re = 0;
+        rd_lock = 0;
+        for (i=0;i<32;i=i+1) begin
+            reg_fwd[i] <= 0;
+            reg_lock[i] <= 0;
+            reg_lock_pend[i] <= 0;
+        end
     end else begin
 
     end
 end
 
+task lock_reg;
+    input[4:0] t_idx;
+    if (t_idx) begin
+        rd_lock = t_idx;
+        $display("ID:REG %d locked",t_idx);
+    end
+endtask
+
+always @(posedge EX_ack) begin
+    $display("ID:EXFWD %d %d %d",EX_fwd_idx,EX_fwd_val,reg_lock[EX_fwd_idx]);
+    reg_fwd[EX_fwd_idx] = EX_fwd_val;
+    if (EX_fwd_idx!=0 && reg_lock[EX_fwd_idx]) begin
+        reg_lock[EX_fwd_idx] = reg_lock_pend[EX_fwd_idx] ? 1 : 0;
+        reg_lock_pend[EX_fwd_idx] = 0; 
+        $display("ID:REG %d unlocked %d",EX_fwd_idx,reg_lock[EX_fwd_idx]);
+        if (wait_idx==EX_fwd_idx) begin
+            t_opr[wait_opr] = EX_fwd_val;
+            $display("ID:Wait end %d %d %d",wait_opr,t_opr[wait_opr],state);
+            wait_idx = 6'b111111;
+            wait_opr = 3'b111;
+            state = nstate;
+            wait_end = 1;
+        end
+    end
+end
+always @(posedge MA_ack) begin
+    reg_fwd[MA_fwd_idx] = MA_fwd_val;
+    $display("ID:MAFWD %d %d %d",MA_fwd_idx,MA_fwd_val,reg_lock[MA_fwd_idx]);
+    if (MA_fwd_idx!=0 && reg_lock[MA_fwd_idx]) begin
+        reg_lock[MA_fwd_idx] = reg_lock_pend[MA_fwd_idx] ? 1 : 0;
+        reg_lock_pend[MA_fwd_idx] = 0; 
+        $display("ID:REG %d unlocked %d",MA_fwd_idx,reg_lock[MA_fwd_idx]);
+        if (wait_idx==MA_fwd_idx) begin
+            t_opr[wait_opr] = MA_fwd_val;
+            $display("ID:Wait end %d %d %d",wait_opr,t_opr[wait_opr],state);
+            wait_idx = 6'b111111;
+            wait_opr = 3'b111;
+            state = nstate;
+            wait_end = 1;
+        end
+    end
+end
+
 always @(posedge buf_avail) begin
-    buf_re = 1;
+    if (state == STATE_IDLE)
+        buf_re = 1;
+    else begin 
+        $display("ID:Busy %d",state);
+    end
 end
 
 always @(posedge buf_rack) begin
@@ -117,45 +213,43 @@ always @(posedge buf_rack) begin
     alu_c = 1'b0;
     rs1_out = 0;
     rs2_out = 0;
-    $display("ID: op:%b f3:%b f7:%b rd:%d rs1:%d rs2:%d opr1:%d opr2:%d val:%d alu_op:%d",op,funct3,funct7,rd,rs1,rs2,opr1,opr2,val,alu_op);
+    if (state!=STATE_IDLE) begin
+        $display("ID:ASSERT failed");
+        $stop;
+    end
     case (op)
         `OP_LUI:begin
             alu_op = `ALU_PASS;
-            opr1 = imm_U;
-            opr2 = 0;
-            buf_we = 1;
+            t_opr[0] = imm_U;
+            t_opr[1] = 0;
+            lock_reg(rd);
         end
         `OP_AUIPC: begin
             alu_op = `ALU_ADD;
-            opr1 = pc_in;
-            opr2 = imm_U;
-            buf_we = 1;
+            t_opr[0] = pc_in;
+            t_opr[1] = imm_U;
+            lock_reg(rd);
         end
         `OP_JAL: begin
             alu_op = `ALU_ADD;
-            opr1 = imm_J;
-            opr2 = pc_in;
-            //val = pc_in + 4;
-            val = 32'h4;
-            buf_we = 1;
+            t_opr[0] = imm_J;
+            t_opr[1] = pc_in;
+            //t_opr[2] = pc_in + 4;
+            t_opr[2] = 32'h4;
+            lock_reg(rd);
         end
         `OP_JALR: begin
             alu_op = `ALU_ADD;
             rs1_out = rs1;
-            opr2 = imm_I;
-            //val = pc_in + 4;
-            val = 32'h4;
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                state = STATE_IDLE;
-                buf_we = 1;
-            end
+            t_opr[1] = imm_I;
+            //t_opr[2] = pc_in + 4;
+            t_opr[2] = 32'h4;
+            fetch_reg(rs1,0);
+            lock_reg(rd);
         end
         `OP_OP_IMM: begin
             rs1_out = rs1;
-            opr2=imm_I;
+            t_opr[1]=imm_I;
             case (funct3)
                 `FUNCT3_ADDI: alu_op = `ALU_ADD;
                 `FUNCT3_SLLI: alu_op = `ALU_SLL;
@@ -167,18 +261,13 @@ always @(posedge buf_rack) begin
                 `FUNCT3_ANDI: alu_op = `ALU_AND;
                 default: $display("ID:ERROR OP_OP");
             endcase
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                state = STATE_IDLE;
-                buf_we = 1;
-            end
+            fetch_reg(rs1,0);
+            lock_reg(rd);
         end
         `OP_LOAD: begin
             rs1_out = rs1;
-            opr2=imm_I;
-            alu_op = `ALU_ADD;
+            t_opr[1]=imm_I;
+            alu_op = `ALU_ADD;    
             case (funct3)
                 `FUNCT3_LB: begin
                     rw_len = 2'b00;
@@ -202,18 +291,13 @@ always @(posedge buf_rack) begin
                 end
                 default: $display("ID:ERROR LOAD");
             endcase
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                state = STATE_IDLE;
-                buf_we = 1;
-            end
+            fetch_reg(rs1,0);
+            lock_reg(rd);
         end
         `OP_BRANCH: begin
             rs1_out = rs1;
             rs2_out = rs2;
-            val=imm_B;
+            t_opr[2]=imm_B;
             case (funct3)
                 `FUNCT3_BEQ:
                     alu_op = `ALU_SEQ;
@@ -233,18 +317,13 @@ always @(posedge buf_rack) begin
                 end
                 default: $display("ID:ERROR BRANCH");
             endcase
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                fetch_reg(rs2,opr2);
-                state = reg_re ? STATE_F2 : STATE_IDLE;
-                buf_we = reg_re ? 0 : 1;
-            end
+            fetch_reg(rs1,0);
+            if (state == STATE_IDLE)
+                fetch_reg(rs2,1);
         end
         `OP_STORE: begin
             rs1_out = rs1;
-            opr2=imm_S;
+            t_opr[1]=imm_S;
             alu_op = `ALU_ADD;
             rw_e = 2'b01;
             case (funct3)
@@ -253,14 +332,9 @@ always @(posedge buf_rack) begin
                 `FUNCT3_SW: rw_len = 2'b11;
                 default: $display("ID:ERROR STORE");
             endcase
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                fetch_reg(rs2,val);
-                state = reg_re ? STATE_FV : STATE_IDLE;
-                buf_we = reg_re ? 0 : 1;
-            end
+            fetch_reg(rs1,0);
+            if(state == STATE_IDLE)
+                fetch_reg(rs2,2); 
         end
         `OP_OP: begin
             rs1_out = rs1;
@@ -276,26 +350,54 @@ always @(posedge buf_rack) begin
                 `FUNCT3_AND: alu_op = `ALU_AND;
                 default: $display("ID:ERROR OP_OP");
             endcase
-            fetch_reg(rs1,opr1);
-            if (reg_re) begin
-                state = STATE_F1;
-            end else begin
-                fetch_reg(rs2,opr2);
-                state = reg_re ? STATE_F2 : STATE_IDLE;
-                buf_we = reg_re ? 0 : 1;
-            end
+            fetch_reg(rs1,0);
+            if (state==STATE_IDLE)
+                fetch_reg(rs2,1);
+            lock_reg(rd);
         end
         `OP_MISC_MEM: begin
             alu_op = `ALU_PASS;
             $display("ID:MISCMEM N/A");
-            buf_we = 1;
         end
         `OP_SYSTEM: begin
             alu_op = `ALU_PASS;
             $display("ID:syscall N/A");
-            buf_we = 1;
         end
         default: $display("ID:ERROR unknown op:%b",op);
+    endcase
+    $display("ID:%x op:%b f3:%b f7:%b rd:%d rs1:%d rs2:%d opr1:%d opr2:%d val:%d alu_op:%d",pc_in,op,funct3,funct7,rd,rs1,rs2,t_opr[0],t_opr[1],t_opr[2],alu_op);
+    if (reg_re==0 && state==STATE_IDLE) begin
+        buf_we = 1;
+    end
+end
+
+always @(posedge wait_end) begin
+    wait_end = 0;
+    case (state)
+        STATE_IDLE: begin $display("ID:Idle");
+        end
+        STATE_F0: begin
+            case (op)
+                `OP_OP, `OP_BRANCH: begin
+                    fetch_reg(rs2,1);
+                    buf_we = (state==STATE_IDLE) ? 1 : 0;
+                end
+                `OP_STORE: begin
+                    fetch_reg(rs2,2);
+                    //state = reg_re ? STATE_F2 : STATE_IDLE;
+                    buf_we = (state==STATE_IDLE) ? 1 : 0;
+                end
+                default: begin 
+                    state = STATE_IDLE;
+                    buf_we = 1;
+                end
+            endcase
+        end
+        STATE_F1, STATE_F2: begin
+            state = STATE_IDLE;
+            buf_we = 1;
+        end
+        default: $display("ID:ERROR rack");
     endcase
 end
 
@@ -304,30 +406,32 @@ always @(posedge reg_rack) begin
     case (state)
         STATE_IDLE: begin $display("ID:Idle");
         end
-        STATE_F1: begin
-            opr1 = reg_in;
+        STATE_F0: begin
+            t_opr[0] = reg_in;
             case (op)
                 `OP_OP, `OP_BRANCH: begin
-                    fetch_reg(rs2,opr2);
-                    state = reg_re ? STATE_F2 : STATE_IDLE;
-                    buf_we = reg_re ? 0 : 1;
+                    fetch_reg(rs2,1);
+                    buf_we = (state==STATE_IDLE) ? 1 : 0;
                 end
                 `OP_STORE: begin
-                    fetch_reg(rs2,val);
-                    state = reg_re ? STATE_FV : STATE_IDLE;
-                    buf_we = reg_re ? 0 : 1;
+                    fetch_reg(rs2,2);
+                    //state = reg_re ? STATE_F2 : STATE_IDLE;
+                    buf_we = (state==STATE_IDLE) ? 1 : 0;
                 end
                 default: begin 
+                    state = STATE_IDLE;
                     buf_we = 1;
                 end
             endcase
         end
-        STATE_F2: begin
-            opr2 = reg_in;
+        STATE_F1: begin
+            t_opr[1] = reg_in;
+            state = STATE_IDLE;
             buf_we = 1;
         end
-        STATE_FV: begin
-            val = reg_in;
+        STATE_F2: begin
+            t_opr[2] = reg_in;
+            state = STATE_IDLE;
             buf_we = 1;
         end
         default: $display("ID:ERROR rack");
@@ -335,7 +439,13 @@ always @(posedge reg_rack) begin
 end
 
 always @(posedge buf_wack) begin
+    if (rd_lock) begin
+        reg_lock_pend[rd_lock] = reg_lock[rd_lock] ? 1 : 0;
+        reg_lock[rd_lock] = 1;
+        rd_lock = 0;
+    end
     buf_we = 0;
+    buf_re = buf_avail ? 1 : 0;
 end
 
 //always @(negedge buf_avail) begin

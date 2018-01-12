@@ -4,7 +4,6 @@ module pipeWB
     input buf_avail,
     output reg buf_re,
     input buf_rack,
-    output reg sig_e,
     
     input wb_e,
     input[31:0] din,
@@ -42,7 +41,7 @@ always @(posedge buf_rack) begin
         end
         1'b0: begin
             $display("WB:None\n");
-            sig_e = ~sig_e;
+            buf_re = buf_avail ? 1 : 0;
         end
         default: $display("WB:ERROR");
     endcase
@@ -50,12 +49,8 @@ end
 
 always @(posedge reg_wack) begin
     reg_we = 0;
+    buf_re = buf_avail ? 1 : 0;
     $display("WB: idx:%d val:%d\n",idxout,dout);
-    sig_e = ~sig_e;
 end
 
-//always @(negedge buf_avail) begin
-//end
-//always @(posedge buf_ack) begin
-//end
 endmodule

@@ -14,6 +14,7 @@ module pipeIF
     //output reg buf_re,
     output reg buf_we,
     input buf_wack,
+    input buf_f,
 
     //output purge_e,
     input jp_e,
@@ -83,7 +84,8 @@ end
 
 //always @(posedge sig_e) begin
 //always @(sig_e or posedge sig_s) begin
-always @(posedge sig_b) begin
+always @(posedge sig_e or posedge sig_s) begin
+    sig_s = 0;
     if (stall) begin
         $display("IF: stalled");
     end else if (!m_re) begin
@@ -94,6 +96,10 @@ always @(posedge sig_b) begin
     end
 end
 
+always @(negedge buf_f) begin
+    sig_s = 1;
+end
+
 always @(posedge jp_e) begin
     //j_pc = pc_in;
     if (pc_in) begin
@@ -101,6 +107,7 @@ always @(posedge jp_e) begin
         //fetch_inst;
         if (stall) begin
             stall = 0;
+            //sig_s = 1;
             //sig_s = ~sig_s;
         end else begin
             $display("IF:Purge");
@@ -109,8 +116,10 @@ always @(posedge jp_e) begin
         $display("IF:Goto %x",nxpc);
     end else begin
         stall = 0;
+        //sig_s = 1;
         //sig_s = ~sig_s;
     end
+    sig_s = buf_f ? 0 : 1;
     jp_ack = 1;
 end
 
@@ -142,6 +151,7 @@ end
 
 always @(posedge buf_wack) begin
     buf_we = 0;
+    sig_s = (buf_f) ? 0 : 1;
 end
 
 always @(negedge jp_e) begin

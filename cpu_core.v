@@ -140,11 +140,9 @@ c1(clk,rst,ca_din[`C_DATA_L],ca_dout[2*`K_C_DATA_L-1:1*`K_C_DATA_L],
     co_rack[1],co_wack);
 `endif
 
-wire sig_loop;
-
 wire IF_jp_ack;
 
-pipeIF pIF(clk,rst,sig_loop,buf_we[0],buf_wack[0],
+pipeIF pIF(clk,rst,~rst,buf_we[0],buf_wack[0],buf_fu[0],
     EX_jp_e,EX_nxpc,IF_jp_ack,
 `ifdef CACHE_E_
     ca_dout[`C_DATA_L],ca_raddr[`M_ADDR_L],ca_re[`RW_E_L],ca_rlen[`RW_LEN_L],ca_rack[0],
@@ -156,8 +154,9 @@ pipeIF pIF(clk,rst,sig_loop,buf_we[0],buf_wack[0],
 //assign buf_i0 = {IF_inst,IF_pc};
 wire[4:0] EX_fwd_idx, MA_fwd_idx;
 wire[31:0] EX_fwd_val, MA_fwd_val;
-wire MA_ack;
+wire MA_ack,EX_ack;
 assign MA_ack = buf_we[3];
+assign EX_ack = buf_we[2];
 //wire[6:0] ID_op;
 //wire[4:0] ID_alu_op;
 //wire ID_alu_c;
@@ -173,7 +172,7 @@ pipeID pID(clk,rst,buf_av[0],buf_re[0],buf_we[1],buf_rack[0],buf_wack[1],
     buf_i1[134:103],buf_i1[102:71],buf_i1[70:39],
     buf_i1[38],buf_i1[37],buf_i1[36],buf_i1[35:34],buf_i1[33:32],
     MA_fwd_idx,MA_fwd_val,
-    EX_fwd_idx,EX_fwd_val);
+    EX_fwd_idx,EX_fwd_val,MA_ack,EX_ack);
 
 //assign buf_i1 = {ID_alu_op,ID_alu_c,
     //ID_rd,ID_rs1,ID_rs2,ID_opr1,ID_opr2,ID_val,
@@ -193,7 +192,7 @@ pipeEX pEX(clk,rst,buf_av[1],buf_re[1],buf_we[2],buf_rack[1],buf_wack[2],
     buf_o1[36],buf_i2[9],buf_i2[8:4],
     buf_o1[38],buf_o1[37],EX_jp_e,EX_nxpc,IF_jp_ack,
     bp_tag_in,bp_t_in,bp_we,bp_wack,
-    MA_fwd_idx,MA_fwd_val,
+    MA_fwd_idx,MA_fwd_val,MA_ack,
     EX_fwd_idx,EX_fwd_val);
 
 //assign buf_i2 = {EX_ans,EX_dout,EX_wb_e,EX_wb_idx,EX_rw_e,EX_rw_len};
@@ -217,7 +216,7 @@ pipeMA pMA(clk,rst,buf_av[2],buf_re[2],buf_we[3],buf_rack[2],buf_wack[3],/*MA_ac
 
 //assign buf_i3 = {MA_wb_e,MA_wb_idx,MA_wb_out};
 
-pipeWB pWB(clk,rst,buf_av[3],buf_re[3],buf_rack[3],sig_loop,
+pipeWB pWB(clk,rst,buf_av[3],buf_re[3],buf_rack[3],
     buf_o3[37],buf_o3[31:0],reg_din,buf_o3[36:32],reg_w_idx,reg_we,reg_wack);
 
 always @(posedge clk or posedge rst) begin

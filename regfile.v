@@ -56,7 +56,7 @@ always @(negedge we) begin
     wack = 0;
 end
 initial begin
-    $dumpfile("test.vcd");
+    //$dumpfile("test.vcd");
     //$dumpvars(0, data[0]);
     //$dumpvars(0, data[1]);
     //$dumpvars(0, data[2]);
