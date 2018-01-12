@@ -1,12 +1,12 @@
 CCR = /opt/riscv/
 CC = $(CCR)bin/riscv32-unknown-elf-
-TESTCASE = case0/
+TESTCASE = case1/
 TESTSRC = ./test/$(TESTCASE)
 #CC = $(CCR)bin/riscv32-unknown-linux-gnu-
 TSF = -march=rv32i -mabi=ilp32
-LDF = -T memory.ld
+LDF =  -L $(CCR)/riscv32-unknown-elf/lib/ -L $(CCR)/lib/gcc/riscv32-unknown-elf/7.2.0/ -lc -lgcc -lm -lnosys -o ./test/test.om
 system.o:
-	$(CC)gcc ./test/rom/system.c -o ./test/rom/system.o $(TSF)
+	$(CC)gcc -c ./test/rom/system.c -o ./test/rom/system.o $(TSF)
 rom.o:
 	$(CC)as ./test/rom/rom.s -o ./test/rom/rom.o $(TSF)
 %.s: ./test/%.cpp
@@ -14,10 +14,11 @@ rom.o:
 	$(CC)g++ -S ./test/test.cpp -o ./test/test.s $(TSF)
 %.s: $(TESTSRC)%.c
 	cp $< ./test/test.c
-	$(CC)gcc -S ./test/test.c -o ./test/test.s $(TSF)
-%: %.s rom.o 
+	$(CC)gcc -S ./test/test.c -o ./test/test.s $(TSF) -Wall
+%: %.s rom.o system.o 
 	$(CC)as ./test/test.s -o ./test/test.o $(TSF)
-	$(CC)ld ./test/test.o ./test/rom/rom.o -o ./test/test.om $(LDF)
+	#$(CC)ld ./test/test.o ./test/rom/rom.o -o ./test/test.om $(LDF)
+	$(CC)ld -T memory.ld ./test/rom/rom.o ./test/test.o ./test/rom/system.o $(LDF) 
 	$(CC)objdump -D ./test/test.om > ./test/test.dump
 	$(CC)objcopy -O binary ./test/test.om ./test/test.bin
 	python ./bin2ascii.py ./test/test.bin ./test/test.ascii

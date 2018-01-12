@@ -48,9 +48,9 @@ module cpu_core
     output[R_PORT*`RW_LEN_L] co_rlen,
     output[W_PORT*`RW_LEN_L] co_wlen,
     input[R_PORT-1:0] co_rack,
-    input[W_PORT-1:0] co_wack,
-    //output[3:0] led,
-    input btn
+    input[W_PORT-1:0] co_wack
+    //,output[3:0] led
+    //,input btn
 );
 localparam BUF_SZ_0 = 5;
 localparam BUF_SZ_1 = 5;
@@ -113,6 +113,7 @@ wire[W_PORT-1:0] ca_wack;
 wire[`C_DATA_L] c0_plh0;
 wire c0_plh1;
 wire[1:0] c0_plh2; 
+
 `ifdef CACHE_E_
 cache#(.ID(0),.WORD_B(2),.IDX_B(5),.SET(2))
 c0(clk,rst,/*ca_din[`C_DATA_L]*/ 0,ca_dout[`C_DATA_L],
