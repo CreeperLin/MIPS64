@@ -1,8 +1,9 @@
 /*CPU*/
 `include "def.v"
+`ifdef SIM
 `include "cpu_core.v"
 `include "mmu.v"
-//`include "mem_ctrl.v"
+`endif
 module riscv_cpu
 #(
     parameter CORE = 1,

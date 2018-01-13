@@ -1,5 +1,7 @@
 /*IF*/
+`ifdef SIM
 `include "riscv_const.v"
+`endif
 `define PC_ENTRY 32'h00000000
 `define PC_MAIN 32'h00001000
 module pipeIF
@@ -125,7 +127,7 @@ end
 
 always @(posedge m_rack) begin
     inst = datain;
-    //m_re = 0;
+    m_re = 0;
     $display("IF: read pc: %x jp_e: %x, inst: %X nxpc: %x",pc,jp_e,inst,nxpc);
     case (inst[6:0])
         `OP_JAL, `OP_JALR: begin

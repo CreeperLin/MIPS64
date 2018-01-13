@@ -1,6 +1,8 @@
 /*Memory Management Unit*/
 `include "def.v"
+`ifdef SIM
 `include "buffer.v"
+`endif
 module mmu
 #(
     parameter M_RPORT = 1,
@@ -196,7 +198,7 @@ end
 always @(posedge m_wack) begin
     m_we = 0;
     if (j==wb_wlen) begin
-        //$display("MMU:Write c_waddr:%x len:%d data:%d",wb_waddr,wb_wlen+1,wb_data);    
+        $display("MMU:Write c_waddr:%x len:%d data:%d",wb_waddr,wb_wlen+1,wb_data);    
         c_wack = 1;
         wbuf_re = wb_a ? 1 : 0;
     end else begin
@@ -208,7 +210,7 @@ always @(posedge m_wack) begin
 end
 
 always @(posedge c_re[0]) begin
-    //$display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
+    $display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
     rbuf_qdin = {1'b0,c_rlen_seg[0],c_raddr_seg[0]};
     if (rbuf_we) begin
         rbuf_qwe = 1;
@@ -241,12 +243,12 @@ end
 
 //always @(posedge c_re) begin
 //always @(c_re) begin
-    //$display("MMU:RBUF re:%b din:%b",c_re,rbuf_din); 
+    $display("MMU:RBUF re:%b din:%b",c_re,rbuf_din); 
     //rbuf_we = 1;
     //for (k=0;k<C_RPORT;k=k+1) begin
         //if(c_re[k]) begin
             //if (rbuf_we) begin
-                //$display("MMU:ERROR BUSY %d",k);
+                $display("MMU:ERROR BUSY %d",k);
             //end else begin
                 //rbuf_we = 1;
             //end
@@ -254,11 +256,11 @@ end
             //c_rack[k] = 0;
         //end
     //end
-    //$display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
+    $display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
 //end
 //always @(c_we) begin
 always @(posedge c_we) begin
-    //$display("MMU:WBUF din:%b",wbuf_din);
+    $display("MMU:WBUF din:%b",wbuf_din);
     wbuf_we = 1;
 end
 

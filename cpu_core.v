@@ -19,6 +19,7 @@
         * Branch Prediction
 */
 //`define CACHE_E_
+`ifdef SIM
 `include "def.v"
 `include "buffer.v"
 `include "regfile.v"
@@ -30,6 +31,7 @@
 `include "b_predictor.v"
 `ifdef CACHE_E_
 `include "cache.v"
+`endif
 `endif
 /*Components*/
 module cpu_core

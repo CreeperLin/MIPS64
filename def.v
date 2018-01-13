@@ -1,6 +1,8 @@
 `ifndef DEFINE_H_
 `define DEFINE_H_
 
+`define SIM
+
 `define K_C_DATA_L   32
 `define K_M_DATA_L   8
 `define K_M_ADDR_L   32
@@ -12,6 +14,11 @@
 `define RW_LEN_L    2-1:0
 `define PC_L        32-1:0
 `define REG_L       32-1:0
+
+`define BAUD_RATE   5000000
+`define CLK_RATE    66667000
+//`define BAUD_RATE   115200
+//`define CLK_RATE    100000000
 
 `define LOG2(x) \
 	((x <= 0)		? -1 : \

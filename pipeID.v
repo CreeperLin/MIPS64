@@ -1,6 +1,10 @@
 /*decoder*/
+`ifdef SIM
 `include "riscv_const.v"
+`endif
+`ifdef SIM
 `include "alu_opcode.v"
+`endif
 module pipeID
 #(
     parameter REG_SZ = 32,
@@ -83,26 +87,13 @@ begin
             t_opr[oidx] = 0;
             state = STATE_IDLE;
         end
-        //MA_fi: begin 
-            //t_opr[oidx] = MA_fv;
-            //MA_fi = 0;
-            //$display("ID:fwdMA %d %d",idx,t_opr[oidx]);
-            //state = STATE_IDLE;
-        //end
-        //EX_fi: begin
-            //t_opr[oidx] = EX_fv;
-            //EX_fi = 0;
-            //state = STATE_IDLE;
-            //$display("ID:fwdEX %d %d",idx,t_opr[oidx]);
-        //end
         default: begin
             if (reg_lock[idx]) begin
-            case (oidx)
-            0: state = STATE_F0;
-            1: state = STATE_F1;
-            2: state = STATE_F2;
-            endcase
-            //if (reg_lock[idx]) begin
+                case (oidx)
+                0: state = STATE_F0;
+                1: state = STATE_F1;
+                2: state = STATE_F2;
+                endcase
                 nstate = state;
                 state = STATE_WAITMA;
                 wait_opr = oidx;

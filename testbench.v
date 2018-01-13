@@ -1,6 +1,12 @@
+`ifdef SIM
 `include "cpu.v"
+`endif
+`ifdef SIM
 `include "ram.v"
+`endif
+`ifdef SIM
 `include "mem_ctrl.v"
+`endif
 
 module testbench;
 parameter MADDR_L = 32;
@@ -28,7 +34,7 @@ initial begin
     rst = 0;
     //forever #1 fclk=!fclk;
     //#500000;
-    //$display("CPU TIMEOUT");
+    $display("CPU TIMEOUT");
     //$finish;
 end
 endmodule

@@ -1,7 +1,9 @@
 /*ALU*/
 `ifndef ALU_H_
 `define ALU_H_
+`ifdef SIM
 `include "alu_opcode.v"
+`endif
 module c_alu 
 #(
     parameter OPR_L = 32,

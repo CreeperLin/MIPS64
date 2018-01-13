@@ -1,6 +1,8 @@
 /*Memory Management Unit*/
 `include "def.v"
+`ifdef SIM
 `include "buffer.v"
+`endif
 module mmu_uart
 #(
     parameter M_RPORT = 1,
@@ -144,7 +146,7 @@ endgenerate
 
 //reg[1:0] t_rlen, t_wlen;
 always @(posedge rbuf_rack) begin
-    //$display("MMU:RBUF p:%b l:%d a:%x",rb_port,rb_rlen,rb_raddr);
+    $display("MMU:RBUF p:%b l:%d a:%x",rb_port,rb_rlen,rb_raddr);
     rbuf_re = 0;
     c_r_buf[rb_port] = 0;
     //empty_r_buf;
@@ -197,7 +199,7 @@ always @(posedge m_wack) begin
 end
 
 always @(posedge c_re[0]) begin
-    //$display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
+    $display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
     //rbuf_din = {1'b0,c_rlen_seg[0],c_raddr_seg[0]};
     if (rbuf_we) begin
         $display("MMU:ERROR BUSY %d",k);
@@ -207,7 +209,7 @@ always @(posedge c_re[0]) begin
 end
 
 always @(posedge c_re[1]) begin
-    //$display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
+    $display("MMU:RBUF re:%b p:%b din:%b",c_re,rport_sel[c_re],rbuf_din); 
     //rbuf_din = {1'b1,c_rlen_seg[1],c_raddr_seg[1]};
     if (rbuf_we) begin
         $display("MMU:ERROR BUSY %d",k);
@@ -223,27 +225,8 @@ end
 always @(negedge c_re[1]) begin
     c_rack[1] = 0;
 end
-
-//always @(posedge c_re) begin
-//always @(c_re) begin
-    //$display("MMU:RBUF re:%b din:%b",c_re,rbuf_din); 
-    //rbuf_we = 1;
-    //for (k=0;k<C_RPORT;k=k+1) begin
-        //if(c_re[k]) begin
-            //if (rbuf_we) begin
-                //$display("MMU:ERROR BUSY %d",k);
-            //end else begin
-                //rbuf_we = 1;
-            //end
-        //end else begin
-            //c_rack[k] = 0;
-        //end
-    //end
-    //$display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
-//end
-//always @(c_we) begin
 always @(posedge c_we) begin
-    //$display("MMU:WBUF din:%b",wbuf_din);
+    $display("MMU:WBUF din:%b",wbuf_din);
     wbuf_we = 1;
 end
 

@@ -55,39 +55,4 @@ end
 always @(negedge we) begin
     wack = 0;
 end
-initial begin
-    //$dumpfile("test.vcd");
-    //$dumpvars(0, data[0]);
-    //$dumpvars(0, data[1]);
-    //$dumpvars(0, data[2]);
-    //$dumpvars(0, data[3]);
-    //$dumpvars(0, data[4]);
-    //$dumpvars(0, data[5]);
-    //$dumpvars(0, data[6]);
-    //$dumpvars(0, data[7]);
-    //$dumpvars(0, data[8]);
-    //$dumpvars(0, data[9]);
-    //$dumpvars(0, data[10]);
-    //$dumpvars(0, data[11]);
-    //$dumpvars(0, data[12]);
-    //$dumpvars(0, data[13]);
-    //$dumpvars(0, data[14]);
-    //$dumpvars(0, data[15]);
-    //$dumpvars(0, data[16]);
-    //$dumpvars(0, data[17]);
-    //$dumpvars(0, data[18]);
-    //$dumpvars(0, data[19]);
-    //$dumpvars(0, data[20]);
-    //$dumpvars(0, data[21]);
-    //$dumpvars(0, data[22]);
-    //$dumpvars(0, data[23]);
-    //$dumpvars(0, data[24]);
-    //$dumpvars(0, data[25]);
-    //$dumpvars(0, data[26]);
-    //$dumpvars(0, data[27]);
-    //$dumpvars(0, data[28]);
-    //$dumpvars(0, data[29]);
-    //$dumpvars(0, data[30]);
-    //$dumpvars(0, data[31]);
-end
 endmodule

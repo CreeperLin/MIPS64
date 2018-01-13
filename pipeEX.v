@@ -1,4 +1,6 @@
+`ifdef SIM
 `include "alu.v"
+`endif
 module pipeEX
 #(
     parameter REG_SZ = 32

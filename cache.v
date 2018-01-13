@@ -1,4 +1,6 @@
+`ifdef SIM
 `include "def.v"
+`endif
 module cache
 #(
     parameter ID = 0,

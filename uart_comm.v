@@ -1,8 +1,9 @@
 `ifndef UART_COMM_
 `define UART_COMM_
 //`timescale 1ns / 1ps
+`ifdef SIM
 `include "buffer.v"
-//`include "fifo.v"
+`endif
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -135,7 +136,7 @@ module uart_comm
 				end
 				
 				STATUS_END: begin
-                    //$display("UART:%0d Received %b",ID,recv_write_data);
+                    $display("UART:%0d Received %b",ID,recv_write_data);
 					recv_status <= STATUS_IDLE;
 					recv_clock <= 0;
                     //recv_ack = 1;
@@ -207,7 +208,7 @@ module uart_comm
 				end
 				
 				STATUS_END:begin
-                    //$display("UART:%0d Sent %b",ID,send_read_data_buf);
+                    $display("UART:%0d Sent %b",ID,send_read_data_buf);
                     //send_ack = 1;
 					Tx <= 1;
 					send_status <= STATUS_IDLE;
