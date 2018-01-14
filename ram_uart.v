@@ -68,35 +68,38 @@ always @(posedge recvable) begin
 end
 
 reg[4:0] ofs;
-wire[31:0] addr;
-wire[31:0] data;
-//reg[31:0] data;
-wire[7:0] data_byte[3:0];
+//wire[31:0] addr;
+//wire[31:0] data;
+//wire[7:0] data_byte[3:0];
+reg[31:0] data;
+reg[31:0] addr;
+reg[7:0] data_byte[3:0];
 reg[6:0] addr_seg[3:0];
 reg[6:0] data_seg[3:0];
 reg[3:0] data_msb;
 reg[3:0] addr_msb;
 reg[1:0] mask;
-genvar i;
-generate
-    for (i=0;i<4;i=i+1) begin
-        assign addr[(i+1)*8-2:i*8] = addr_seg[i];
-        assign addr[(i+1)*8-1] = addr_msb[i];
-        assign data[(i+1)*8-2:i*8] = data_seg[i];
-        assign data[(i+1)*8-1] = data_msb[i];
-        assign data_byte[i] = data[(i+1)*8-1:i*8];
-    end
-endgenerate
+//genvar i;
+//generate
+    //for (i=0;i<4;i=i+1) begin
+        ////assign addr[(i+1)*8-2:i*8] = addr_seg[i];
+        ////assign addr[(i+1)*8-1] = addr_msb[i];
+        ////assign data[(i+1)*8-2:i*8] = data_seg[i];
+        ////assign data[(i+1)*8-1] = data_msb[i];
+        ////assign data_byte[i] = data[(i+1)*8-1:i*8];
+    //end
+//endgenerate
 reg signed[31:0] outl,inl;
 always @(posedge recv_ack) begin
     recv_flag = 0;
     if (recv_data[7]) begin
+        mask = recv_data[1:0];
         if (recv_data[6]) begin
-            //$display("RAM:SYN Read");
+            $display("RAM:SYN Read %d",mask);
             ofs = 0;
             state = STATE_R_ADDR;
         end else begin
-            //$display("RAM:SYN Write");
+            $display("RAM:SYN Write %d",mask);
             ofs = 0;
             state = STATE_W_ADDR;
         end
@@ -107,8 +110,23 @@ always @(posedge recv_ack) begin
                     4: begin
                         addr_msb = recv_data[3:0];
                         //$display("RAM:RADDR MSB %b",addr_msb);
+                        //ofs = 0;
+                        //state = STATE_R_MASK;
+                        addr = {addr_msb[3],addr_seg[3],
+                            addr_msb[2],addr_seg[2],
+                            addr_msb[1],addr_seg[1],
+                            addr_msb[0],addr_seg[0]};
+                        $display("RAM:RADDR %x",addr);
                         ofs = 0;
-                        state = STATE_R_MASK;
+                        case (addr)
+                            32'h100: begin
+                                memory[addr] = $fgetc(fp_r);
+                                $display("IO:InputByte: %c", memory[addr]);
+                            end
+                        endcase
+                        send_data = memory[addr+ofs];
+                        state = STATE_R_DATA;
+                        send_flag = 1;
                     end
                     default: begin 
                         addr_seg[ofs] = recv_data[6:0];
@@ -121,8 +139,24 @@ always @(posedge recv_ack) begin
                     4: begin
                         addr_msb = recv_data[3:0];
                         //$display("RAM:WADDR MSB %b",addr_msb);
+                        //ofs = 0;
+                        //state = STATE_W_MASK;
+                        addr = {addr_msb[3],addr_seg[3],
+                            addr_msb[2],addr_seg[2],
+                            addr_msb[1],addr_seg[1],
+                            addr_msb[0],addr_seg[0]};
+                        $display("RAM:WADDR %x",addr);
                         ofs = 0;
-                        state = STATE_W_MASK;
+                        data_seg[0] <= 0;
+                        data_seg[1] <= 0;
+                        data_seg[2] <= 0;
+                        data_seg[3] <= 0;
+                        data_msb <= 0;
+                        data_byte[0] <= 0;
+                        data_byte[1] <= 0;
+                        data_byte[2] <= 0;
+                        data_byte[3] <= 0;
+                        state = STATE_W_DATA;
                     end
                     default: begin 
                         addr_seg[ofs] = recv_data[6:0];
@@ -130,39 +164,41 @@ always @(posedge recv_ack) begin
                     end
                 endcase
             end
-            STATE_R_MASK: begin
-                //$display("RAM:RADDR %x",addr);
-                mask = recv_data[1:0];
-                ofs = 0;
-                send_data = memory[addr+ofs];
-                case (addr)
-                    32'h100: begin
-                        memory[addr] = $fgetc(fp_r);
-                        $display("IO:InputByte: %c", memory[addr]);
-                    end
-                endcase
-                //$display("RAM:Read Data %x",send_data);
-                state = STATE_R_DATA;
-                send_flag = 1;
-            end
-            STATE_W_MASK: begin
-                //$display("RAM:WADDR %x",addr);
-                mask = recv_data[1:0];
-                ofs = 0;
-                state = STATE_W_DATA;
-            end
+            //STATE_R_MASK: begin
+                ////$display("RAM:RADDR %x",addr);
+                ////mask = recv_data[1:0];
+                //ofs = 0;
+                //send_data = memory[addr+ofs];
+                //case (addr)
+                    //32'h100: begin
+                        //memory[addr] = $fgetc(fp_r);
+                        //$display("IO:InputByte: %c", memory[addr]);
+                    //end
+                //endcase
+                //state = STATE_R_DATA;
+                //send_flag = 1;
+            //end
+            //STATE_W_MASK: begin
+                ////$display("RAM:WADDR %x",addr);
+                ////mask = recv_data[1:0];
+                //ofs = 0;
+                //state = STATE_W_DATA;
+            //end
             STATE_W_DATA: begin
                 case (ofs)
                     (mask+1): begin
                         ofs = 0;
                         data_msb = recv_data[3:0];
-                        #1;
-                        //data = {data_msb[3],data_seg[3],
-                            //data_msb[2],data_seg[2],
-                            //data_msb[1],data_seg[1],
-                            //data_msb[0],data_seg[0]};
+                        data = {data_msb[3],data_seg[3],
+                            data_msb[2],data_seg[2],
+                            data_msb[1],data_seg[1],
+                            data_msb[0],data_seg[0]};
+                        
+                        data_byte[3] = {data_msb[3],data_seg[3]};
+                        data_byte[2] = {data_msb[2],data_seg[2]};
+                        data_byte[1] = {data_msb[1],data_seg[1]};
+                        data_byte[0] = {data_msb[0],data_seg[0]};
                         //$display("RAM:WDATA MSB %b",data_msb);
-                        $display("RAM:WDATA %x",data);
                         case (addr)
                             32'h104: begin
                                 $fwrite(fp_w,"%c",data);
@@ -190,10 +226,13 @@ always @(posedge recv_ack) begin
                         endcase
                         for (t=0;t<=mask;t=t+1) begin
                             memory[addr+t] = data_byte[t];
+                            $display("RAM:Write %x %x",addr+t,data_byte[t]);
                         end
+                        $display("RAM:Write Done %x %x",addr,data);
                     end
                     default: begin 
                         data_seg[ofs] = recv_data[6:0];
+                        $display("RAM:Write Recv %x %x",ofs,data_seg[ofs]);
                         ofs = ofs + 1;
                     end
                 endcase
@@ -207,13 +246,14 @@ always @(posedge send_ack) begin
     send_flag = 0;
     case (state)
         STATE_R_DATA: begin
+            $display("RAM:Read a:%x %x",addr+ofs,send_data);
             if (ofs==mask) begin
+                $display("RAM:Read Done %x",addr);
                 ofs = 0;
                 state = STATE_IDLE;
             end else begin
                 ofs = ofs + 1;
                 send_data = memory[addr+ofs];
-                //$display("RAM:Read a:%x %x",addr+ofs,send_data);
                 send_flag = 1;
             end
         end
@@ -222,11 +262,16 @@ end
 
 always @(posedge clk or posedge rst) begin
     if(rst) begin
-        //data = 0;
+        data = 0;
+        addr = 0;
         recv_flag = 0;
         send_flag = 0;
         send_data = 0;
         addr_msb = 0;
+        addr_seg[0] = 0;
+        addr_seg[1] = 0;
+        addr_seg[2] = 0;
+        addr_seg[3] = 0;
         state = 0;
         send_data <= 0;
     end else begin

@@ -28,6 +28,7 @@ rom.o:
 	iverilog testuart.v
 	vvp -l ./vvp.log ./a.out
 	sed -i '/^\(VCD\|WARNING\)/'d ./vvp.log
+	./simple.sh
 	#gtkwave test.vcd
 	cat ./test/test.out 
 	if [ -f $(TESTSRC)$@.ans ]; then cat $(TESTSRC)$@.ans;diff ./test/test.out $(TESTSRC)$@.ans; fi

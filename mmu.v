@@ -243,12 +243,12 @@ end
 
 //always @(posedge c_re) begin
 //always @(c_re) begin
-    $display("MMU:RBUF re:%b din:%b",c_re,rbuf_din); 
+    //$display("MMU:RBUF re:%b din:%b",c_re,rbuf_din); 
     //rbuf_we = 1;
     //for (k=0;k<C_RPORT;k=k+1) begin
         //if(c_re[k]) begin
             //if (rbuf_we) begin
-                $display("MMU:ERROR BUSY %d",k);
+                //$display("MMU:ERROR BUSY %d",k);
             //end else begin
                 //rbuf_we = 1;
             //end
@@ -256,7 +256,7 @@ end
             //c_rack[k] = 0;
         //end
     //end
-    $display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
+    //$display("MMU:%b %x %x",c_re,c_rlen,c_raddr);
 //end
 //always @(c_we) begin
 always @(posedge c_we) begin

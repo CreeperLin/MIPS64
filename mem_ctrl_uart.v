@@ -7,15 +7,6 @@
 module mem_ctrl_uart
 (
     input clk, rst,
-    //input[M_DATA_L-1:0] m_din,
-    //output[M_DATA_L-1:0] m_dout,
-    //output[MADDR_L-1:0] m_raddr,
-    //output[MADDR_L-1:0] m_waddr,
-    //output m_re,
-    //output m_we,
-    //input m_rack, m_wack,
-    //input Rx,
-    //output reg Tx,
     input[`M_DATA_L] u_din,
     output reg[`M_DATA_L] u_dout,
     output reg u_re, u_we,
@@ -45,18 +36,22 @@ reg[STATE_B-1:0] state;
 localparam RWBUF_L = 1 + 2 + `K_M_ADDR_L + `K_C_DATA_L;
 reg[RWBUF_L-1:0] rwb_din;
 wire[RWBUF_L-1:0] rwb_dout;
-wire rwb_rw;
-wire[`RW_LEN_L] rwb_mask;
-wire[`M_ADDR_L] rwb_addr;
-wire[`C_DATA_L] rwb_data;
+//wire rwb_rw;
+//wire[`RW_LEN_L] rwb_mask;
+//wire[`M_ADDR_L] rwb_addr;
+//wire[`C_DATA_L] rwb_data;
+//assign rwb_addr = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L-1:`K_C_DATA_L];
+//assign rwb_rw = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+2];
+//assign rwb_mask = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+1:`K_M_ADDR_L+`K_C_DATA_L];
+//assign rwb_data = rwb_dout[`C_DATA_L];
 reg rwb_re, rwb_we;
 wire rwb_rack, rwb_wack, rwb_a, rwb_f;
 buffer#(.BUF_ID(6),.ADDR_L(5),.DATA_L(RWBUF_L)) rwbuf
 (clk,rst,rwb_re,rwb_we,rwb_din,rwb_dout,rwb_rack,rwb_wack,rwb_a,rwb_f);
-assign rwb_addr = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L-1:`K_C_DATA_L];
-assign rwb_rw = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+2];
-assign rwb_mask = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+1:`K_M_ADDR_L+`K_C_DATA_L];
-assign rwb_data = rwb_dout[`C_DATA_L];
+reg rwb_rw;
+reg[`RW_LEN_L] rwb_mask;
+reg[`M_ADDR_L] rwb_addr;
+reg[`C_DATA_L] rwb_data;
 
 reg[3:0] b_ofs;
 reg u_qre, u_qwe;
@@ -77,6 +72,8 @@ generate
     end
 endgenerate
 
+reg busy;
+
 reg[`M_DATA_L] c_dout_buf[3:0];
 assign c_dout = {c_dout_buf[3],c_dout_buf[2],c_dout_buf[1],c_dout_buf[0]};
 task empty_r_buf;
@@ -91,13 +88,17 @@ endtask
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         state = STATE_IDLE;
+        busy = 0;
+        rwb_rw = 0;
+        rwb_addr = 0;
+        rwb_mask = 0;
+        rwb_data = 0;
         b_ofs = 0;
         u_dout = 0;
         u_re = 0;
         u_we = 0;
         u_qre = 0;
         u_qwe = 0;
-        //Tx = 0;
         c_rack = 0;
         c_wack = 0;
         rwb_din = 0;
@@ -129,23 +130,29 @@ always @(posedge c_we) begin
 end
 
 always @(posedge rwb_a) begin
-    rwb_re = 1;
+    if (!busy)
+        rwb_re = 1;
 end
 
 always @(posedge rwb_rack) begin
+    busy = 1;
+    rwb_rw = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+2];
+    rwb_mask = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+1:`K_M_ADDR_L+`K_C_DATA_L];
+    rwb_addr = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L-1:`K_C_DATA_L];
+    rwb_data = rwb_dout[`C_DATA_L];
     rwb_re = 0;
-    #1;
-    $display("MCTRL:RWBUF: %b %b %b %b",rwb_rw,rwb_mask,rwb_addr,rwb_data);
-    $display("MCTRL:RWBUF: %b %b %b %b %b",rwb_addr_seg[3],rwb_addr_seg[2],rwb_addr_seg[1],rwb_addr_seg[0],rwb_addr_msb);
+    //$display("MCTRL:RWBUF: %b %b %b %b",rwb_rw,rwb_mask,rwb_addr,rwb_data);
     case (rwb_rw)
         1'b1: begin
-            u_dout = 8'b11000000;
+            //u_dout = 8'b11000000;
+            u_dout = {6'b110000,rwb_mask};
             $display("MCTRL:READ a:%x dout:%x",rwb_addr,u_dout);
             state = STATE_R_INIT;
             u_qwe = 1;
         end
         1'b0: begin
-            u_dout = 8'b10000000;
+            //u_dout = 8'b10000000;
+            u_dout = {6'b100000,rwb_mask};
             $display("MCTRL:WRITE a:%x d:%d",rwb_addr,rwb_data);
             state = STATE_W_INIT;
             u_qwe = 1;
@@ -153,15 +160,15 @@ always @(posedge rwb_rack) begin
         default: $display("MCTRL:ERROR unknown rw");
     endcase
 end
-always @(state) begin
-    case (state)
-        STATE_IDLE: begin
-            if (rwb_a) begin
-                rwb_re = 1;
-            end
-        end
-    endcase
-end
+//always @(state) begin
+    //case (state)
+        //STATE_IDLE: begin
+            //if (rwb_a) begin
+                //rwb_re = 1;
+            //end
+        //end
+    //endcase
+//end
 always @(posedge u_rack) begin
     u_re = 0;
     case (state)
@@ -176,7 +183,9 @@ always @(posedge u_rack) begin
                 $display("MCTRL:Read Done %x",c_dout);
                 c_rack = 1;
                 b_ofs = 0;
+                busy = 0;
                 state = STATE_IDLE;
+                rwb_re = rwb_a ? 1 : 0;
             end else begin
                 b_ofs = b_ofs + 1;
                 u_qre = 1;
@@ -210,10 +219,17 @@ always @(posedge u_wack) begin
             case (b_ofs)
             4: begin
                 $display("MCTRL:raddr sent %x",rwb_addr);
+                //b_ofs = 0;
+                //u_dout = {6'b0,rwb_mask};
+                //u_qwe = 1;
+                //state = STATE_R_MASK;
                 b_ofs = 0;
-                u_dout = {6'b0,rwb_mask};
-                u_qwe = 1;
-                state = STATE_R_MASK;
+                c_dout_buf[0] <= 0;
+                c_dout_buf[1] <= 0;
+                c_dout_buf[2] <= 0;
+                c_dout_buf[3] <= 0;
+                state = STATE_R_DATA;
+                u_qre = 1;
             end
             3: begin
                 u_dout = rwb_addr_msb;
@@ -229,24 +245,28 @@ always @(posedge u_wack) begin
             end
             endcase
         end
-        STATE_R_MASK: begin
-            $display("MCTRL:rlen sent %d",rwb_mask);
-            b_ofs = 0;
-            c_dout_buf[0] <= 0;
-            c_dout_buf[1] <= 0;
-            c_dout_buf[2] <= 0;
-            c_dout_buf[3] <= 0;
-            state = STATE_R_DATA;
-            u_qre = 1;
-        end
+        //STATE_R_MASK: begin
+            //$display("MCTRL:rlen sent %d",rwb_mask);
+            //b_ofs = 0;
+            //c_dout_buf[0] <= 0;
+            //c_dout_buf[1] <= 0;
+            //c_dout_buf[2] <= 0;
+            //c_dout_buf[3] <= 0;
+            //state = STATE_R_DATA;
+            //u_qre = 1;
+        //end
         STATE_W_ADDR: begin
             case (b_ofs)
             4: begin
                 $display("MCTRL:waddr sent %x",rwb_addr);
                 b_ofs = 0;
-                u_dout = {6'b0,rwb_mask};
+                u_dout = rwb_data_seg[b_ofs];
+                state = STATE_W_DATA;
                 u_qwe = 1;
-                state = STATE_W_MASK;
+                //b_ofs = 0;
+                //u_dout = {6'b0,rwb_mask};
+                //u_qwe = 1;
+                //state = STATE_W_MASK;
             end
             3: begin
                 u_dout = rwb_addr_msb;
@@ -260,20 +280,23 @@ always @(posedge u_wack) begin
             end
             endcase
         end
-        STATE_W_MASK: begin
-            $display("MCTRL:wlen sent %d",rwb_mask);
-            b_ofs = 0;
-            u_dout = rwb_data_seg[b_ofs];
-            state = STATE_W_DATA;
-            u_qwe = 1;
-        end
+        //STATE_W_MASK: begin
+            //$display("MCTRL:wlen sent %d",rwb_mask);
+            //b_ofs = 0;
+            //u_dout = rwb_data_seg[b_ofs];
+            //state = STATE_W_DATA;
+            //u_qwe = 1;
+        //end
         STATE_W_DATA: begin
+            $display("MCTRL:Write %d %x",b_ofs,u_dout);
             case (b_ofs)
             (rwb_mask+1): begin
-                $display("MCTRL:write done %d",rwb_data);
+                $display("MCTRL:Write done %d",rwb_data);
                 b_ofs = 0;
-                state = STATE_IDLE;
                 c_wack = 1;
+                busy = 0;
+                state = STATE_IDLE;
+                rwb_re = rwb_a ? 1 : 0;
             end
             rwb_mask: begin
                 b_ofs = b_ofs + 1;
