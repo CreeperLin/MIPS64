@@ -32,7 +32,7 @@ module pipeIF
     //output [PC_L-1:0] nxpc 
     output reg[PC_L-1:0] pc_out,
     output reg[10-1:0] bp_tag_q,
-    input bp_t, sig_b
+    input bp_t
 );
 
 reg sig_s;
@@ -48,30 +48,18 @@ reg[PC_L-1:0] nxpc;
 //assign inst_op = inst[6:0];
 assign addr = nxpc[MADDR_L-1:0];
 
-//task fetch_inst;
-//begin
-    //re = 1;
-    //inst = datain;
-    //re = 0;
-    ////inst[31:0] = {datain[7:0],datain[15:8],datain[23:16],datain[31:24]};
-//end
-//endtask
-
 assign m_rlen = 3;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        //pc <= 0;
         pc = `PC_ENTRY;
         nxpc = `PC_ENTRY;
         pc_out = 0;
-        //buf_re <= 0;
         buf_we = 0;
         inst = 0;
-        //addr = 0;
         m_re = 0;
         stall = 0;
+        sig_s = 0;
         jp_ack = 0;
-        //fetch_inst;
     end else begin
         //if (stall) begin
             //$display("IF: stalled");
@@ -99,7 +87,7 @@ always @(posedge sig_e or posedge sig_s) begin
 end
 
 always @(negedge buf_f) begin
-    sig_s = 1;
+    sig_s = sig_e ? 1 : 0;
 end
 
 always @(posedge jp_e) begin

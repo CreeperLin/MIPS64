@@ -16,7 +16,7 @@ module riscv_cpu
     input clk_in, btnC,
     input Rx,
     output Tx,
-    //input btnU,
+    input btnU,
     output reg[10:0] disp_out,
     output [15:0] led_out
 );
@@ -54,7 +54,7 @@ wire[`M_DATA_L] u_send, u_recv;
 
 cpu_core core0(clk,rst,co_din[2*`C_DATA_L],co_dout[`C_DATA_L],
     co_raddr[2*`M_ADDR_L],co_waddr[`M_ADDR_L],
-    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L],co_rack,co_wack/*led_out[3:0],*//*,btnU*/);
+    co_re[2 * `RW_E_L],co_we[`RW_E_L],co_rlen[2*`RW_LEN_L],co_wlen[`RW_LEN_L],co_rack,co_wack/*led_out[3:0],*/,btnU);
 //mmu mmu(clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,m_rack,m_wack,
 mmu_uart mmu_u(clk,rst,data_in,data_out,read_addr,write_addr,c_re,c_we,c_rlen,c_wlen,m_rack,m_wack,
     co_dout,co_din,co_raddr,co_waddr,co_re,co_we,co_rlen,co_wlen,co_rack,co_wack);

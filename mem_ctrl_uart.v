@@ -46,7 +46,7 @@ wire[RWBUF_L-1:0] rwb_dout;
 //assign rwb_data = rwb_dout[`C_DATA_L];
 reg rwb_re, rwb_we;
 wire rwb_rack, rwb_wack, rwb_a, rwb_f;
-buffer#(.BUF_ID(6),.ADDR_L(5),.DATA_L(RWBUF_L)) rwbuf
+buffer#(.BUF_ID(7),.ADDR_L(5),.DATA_L(RWBUF_L)) rwbuf
 (clk,rst,rwb_re,rwb_we,rwb_din,rwb_dout,rwb_rack,rwb_wack,rwb_a,rwb_f);
 reg rwb_rw;
 reg[`RW_LEN_L] rwb_mask;

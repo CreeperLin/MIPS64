@@ -18,13 +18,13 @@ static inline void outb(const unsigned char data)
 #if INT_PORT_E
 static inline unsigned long inl()
 {
-    unsigned long tmp;
     unsigned char data[4];
 	*((volatile unsigned char *)0x200) = 1;
     data[0] = *((volatile unsigned char *)0x201); 
     data[1] = *((volatile unsigned char *)0x202); 
     data[2] = *((volatile unsigned char *)0x203); 
     data[3] = *((volatile unsigned char *)0x204);
+    //unsigned long tmp;
     //tmp = *((volatile unsigned long *)0x201);
 	//*((volatile unsigned char *)0x200) = 0;
 	return data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);

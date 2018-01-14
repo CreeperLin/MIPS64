@@ -82,7 +82,7 @@ assign wbuf_din = {1'b0,c_wlen,c_waddr,c_din};
 buffer#(.BUF_ID(5),.ADDR_L(5),.DATA_L(RBUF_L)) rbuf(
     clk,rst,rbuf_re,rbuf_we,rbuf_din,rbuf_dout,rbuf_rack,rbuf_wack,rb_a,rb_f
 );
-buffer#(.BUF_ID(5),.ADDR_L(5),.DATA_L(WBUF_L)) wbuf(
+buffer#(.BUF_ID(6),.ADDR_L(5),.DATA_L(WBUF_L)) wbuf(
     clk,rst,wbuf_re,wbuf_we,wbuf_din,wbuf_dout,wbuf_rack,wbuf_wack,wb_a,wb_f
 );
 reg r_busy;
