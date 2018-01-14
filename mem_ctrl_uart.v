@@ -116,16 +116,18 @@ end
 always @(posedge c_re) begin
     rwb_din = {1'b1,c_rlen,c_raddr,32'b0};
     $display("MCTRL:C_R_SYN: a:%x b:%b",c_raddr,rwb_din);
-    if (rwb_we)
+    if (rwb_we) begin
         $display("MCTRL:ERROR BUSY");
+    end
     rwb_we = 1;
 end
 
 always @(posedge c_we) begin
     rwb_din = {1'b0,c_wlen,c_waddr,c_din};
     $display("MCTRL:C_W_SYN: a:%x d:%d b:%b",c_waddr,c_din,rwb_din);
-    if (rwb_we)
+    if (rwb_we) begin
         $display("MCTRL:ERROR BUSY");
+    end
     rwb_we = 1;
 end
 
