@@ -1,10 +1,7 @@
 /*decoder*/
-`ifdef SIM
+`include "def.v"
 `include "riscv_const.v"
-`endif
-`ifdef SIM
 `include "alu_opcode.v"
-`endif
 module pipeID
 #(
     parameter REG_SZ = 32,
@@ -42,6 +39,15 @@ module pipeID
     input[31:0] EX_fwd_val,
     input MA_ack,EX_ack
 );
+
+localparam STATE_B      = 3;
+localparam STATE_IDLE   = 0;
+localparam STATE_F0     = 1;
+localparam STATE_F1     = 2;
+localparam STATE_F2     = 3;
+localparam STATE_WAITMA = 4;
+reg[STATE_B-1:0] state,nstate;
+
 reg[31:0] reg_fwd[31:0];
 reg[4:0] rd_lock;
 reg[31:0] reg_lock;
@@ -109,14 +115,6 @@ begin
     endcase
 end
 endtask
-
-localparam STATE_B      = 3;
-localparam STATE_IDLE   = 0;
-localparam STATE_F0     = 1;
-localparam STATE_F1     = 2;
-localparam STATE_F2     = 3;
-localparam STATE_WAITMA = 4;
-reg[STATE_B-1:0] state,nstate;
 
 reg wait_end;
 

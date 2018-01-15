@@ -1,7 +1,5 @@
 /*IF*/
-`ifdef SIM
 `include "riscv_const.v"
-`endif
 `define PC_ENTRY 32'h00000000
 `define PC_MAIN 32'h00001000
 module pipeIF
@@ -32,7 +30,8 @@ module pipeIF
     //output [PC_L-1:0] nxpc 
     output reg[PC_L-1:0] pc_out,
     output reg[10-1:0] bp_tag_q,
-    input bp_t
+    input bp_t,
+    output reg dbg
 );
 
 reg sig_s;
@@ -51,15 +50,16 @@ assign addr = nxpc[MADDR_L-1:0];
 assign m_rlen = 3;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        pc = `PC_ENTRY;
-        nxpc = `PC_ENTRY;
-        pc_out = 0;
-        buf_we = 0;
-        inst = 0;
+        dbg <= 0;
+        pc <= `PC_ENTRY;
+        nxpc <= `PC_ENTRY;
+        pc_out <= 0;
+        buf_we <= 0;
+        inst <= 0;
         m_re = 0;
-        stall = 0;
-        sig_s = 0;
-        jp_ack = 0;
+        stall <= 0;
+        sig_s <= 0;
+        jp_ack <= 0;
     end else begin
         //if (stall) begin
             //$display("IF: stalled");
@@ -72,10 +72,14 @@ always @(posedge clk or posedge rst) begin
     end
 end
 
-//always @(posedge sig_e) begin
+always @(posedge sig_e) begin
+    dbg <= 1;
+    sig_s <= 1;
+end
 //always @(sig_e or posedge sig_s) begin
-always @(posedge sig_e or posedge sig_s) begin
-    sig_s = 0;
+//always @(posedge sig_e or posedge sig_s) begin
+always @(posedge sig_s) begin
+    dbg <= 1;
     if (stall) begin
         $display("IF: stalled");
     end else if (!m_re) begin
@@ -84,6 +88,7 @@ always @(posedge sig_e or posedge sig_s) begin
         //fetch_inst;
         m_re = 1;
     end
+    sig_s = 0;
 end
 
 always @(negedge buf_f) begin

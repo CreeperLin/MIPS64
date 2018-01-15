@@ -70,14 +70,14 @@ wire[SET-1:0] w_replace;
 
 wire signed[SET_B:0] set_sel[(1<<SET)-1:0];
 
-localparam STATE_B =            3;
+localparam STATE_B =            6;
 localparam STATE_IDLE =         0;
 localparam STATE_FE =           1;
 localparam STATE_FE_WAIT =      2;
-localparam STATE_FL =           3;      
-localparam STATE_FL_WAIT =      4;
-localparam STATE_R_WAIT =       5;
-localparam STATE_W_WAIT =       6;
+localparam STATE_FL =           4;      
+localparam STATE_FL_WAIT =      8;
+localparam STATE_R_WAIT =       16;
+localparam STATE_W_WAIT =       32;
 reg[STATE_B-1:0] state;
 
 genvar i;

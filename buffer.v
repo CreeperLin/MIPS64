@@ -40,32 +40,32 @@ always @(posedge we) begin
     if (full) begin
         $display("BUF:ID:%d ERROR FULL w:%d r:%d",BUF_ID,wpt,rpt);
     end else begin
-        data[wpt] = din;
-        wpt = wpt + 1;
+        data[wpt] <= din;
+        wpt <= wpt + 1;
         //$display("BUF:ID:%d Write data:%d wpt:%d",BUF_ID,din,wpt);
         $display("BUF:ID:%d Write w:%d r:%d",BUF_ID,wpt,rpt);
     end
-    w_ack = 1;
+    w_ack <= 1;
 end
 always @(posedge re) begin
     if (avail) begin
-        dout = data[rpt];
-        rpt = rpt + 1;
+        dout <= data[rpt];
+        rpt <= rpt + 1;
         //$display("BUF:ID:%d Read data:%d rpt:%d",BUF_ID,dout,rpt);
         $display("BUF:ID:%d Read w:%d r:%d",BUF_ID,wpt,rpt);
     end else begin
-        dout = 0;
+        dout <= 0;
         $display("BUF:ID:%d ERROR EMPTY w:%d r:%d",BUF_ID,wpt,rpt);
     end
-    r_ack = 1;
+    r_ack <= 1;
 end
 
 always @(negedge we) begin
-    w_ack = 0;
+    w_ack <= 0;
 end
 
 always @(negedge re) begin
-    r_ack = 0;
+    r_ack <= 0;
 end
 endmodule
 `endif

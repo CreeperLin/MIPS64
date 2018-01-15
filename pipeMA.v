@@ -30,18 +30,19 @@ module pipeMA
     output[4:0] MA_fwd_idx,
     output[31:0] MA_fwd_val
 );
-assign wb_e = ex_wb_e;
-assign wb_idx = ex_wb_idx;
-
-assign MA_fwd_idx = ((state==STATE_IDLE)&&((rw_e==2'b11)||(rw_e==2'b10))) ? ex_wb_idx : 0;
-assign MA_fwd_val = wb_out;
 
 localparam STATE_B      = 3;
 localparam STATE_IDLE   = 0;
 localparam STATE_R      = 1;
 localparam STATE_RU     = 2;
-localparam STATE_W      = 3;
+localparam STATE_W      = 4;
 reg[STATE_B-1:0] state;
+
+assign wb_e = ex_wb_e;
+assign wb_idx = ex_wb_idx;
+
+assign MA_fwd_idx = ((state==STATE_IDLE)&&((rw_e==2'b11)||(rw_e==2'b10))) ? ex_wb_idx : 0;
+assign MA_fwd_val = wb_out;
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin

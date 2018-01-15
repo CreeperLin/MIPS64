@@ -69,7 +69,7 @@ localparam STATE_B          = 3;
 localparam STATE_IDLE       = 0;
 localparam STATE_OPR_CAL    = 1;
 localparam STATE_JADDR_CAL  = 2;
-localparam STATE_BADDR_CAL  = 3;
+localparam STATE_BADDR_CAL  = 4;
 reg[STATE_B-1:0] state;
 
 task run_alu;

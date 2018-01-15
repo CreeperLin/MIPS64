@@ -10,16 +10,16 @@ module ram_uart(
 );
 localparam M_SIZE_B = 21;
 localparam M_SIZE = 2**M_SIZE_B;
-localparam STATE_B          = 4;
+localparam STATE_B          = 6;
 localparam STATE_IDLE       = 0;
 localparam STATE_R_ADDR     = 1;
 localparam STATE_R_DATA     = 2;
-localparam STATE_R_MASK     = 3;
 localparam STATE_W_ADDR     = 4;
-localparam STATE_W_DATA     = 5;
-localparam STATE_W_MASK     = 6;
-localparam STATE_R_INIT     = 7;
-localparam STATE_W_INIT     = 8;
+localparam STATE_W_DATA     = 8;
+localparam STATE_R_INIT     = 16;
+localparam STATE_W_INIT     = 32;
+//localparam STATE_R_MASK     = 3;
+//localparam STATE_W_MASK     = 6;
 reg[STATE_B-1:0] state;
 
 reg send_flag;
@@ -43,9 +43,9 @@ initial begin
     for(t=0;t<M_SIZE;t=t+1) begin
         memory[t] = 0;
     end
-    $readmemh("./test/test.dat", memory);
-    fp_r = $fopen("./test/test.in", "r");
-    fp_w = $fopen("./test/test.out", "w");
+    $readmemh("/root/GitRepo/RISCV32/test/test.dat", memory);
+    fp_r = $fopen("/root/GitRepo/RISCV32/test/test.in", "r");
+    fp_w = $fopen("/root/GitRepo/RISCV32/test/test.out", "w");
 end
 
 //function [`M_ADDR_L] getDWORD;
