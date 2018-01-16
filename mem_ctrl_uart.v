@@ -142,7 +142,7 @@ always @(posedge rwb_rack) begin
     rwb_mask = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L+1:`K_M_ADDR_L+`K_C_DATA_L];
     rwb_addr = rwb_dout[`K_M_ADDR_L+`K_C_DATA_L-1:`K_C_DATA_L];
     rwb_data = rwb_dout[`C_DATA_L];
-    rwb_re = 0;
+    rwb_re <= 0;
     //$display("MCTRL:RWBUF: %b %b %b %b",rwb_rw,rwb_mask,rwb_addr,rwb_data);
     case (rwb_rw)
         1'b1: begin
@@ -160,15 +160,6 @@ always @(posedge rwb_rack) begin
         default: $display("MCTRL:ERROR unknown rw");
     endcase
 end
-//always @(state) begin
-    //case (state)
-        //STATE_IDLE: begin
-            //if (rwb_a) begin
-                //rwb_re = 1;
-            //end
-        //end
-    //endcase
-//end
 always @(posedge u_rack) begin
     u_re <= 0;
     case (state)
@@ -178,7 +169,7 @@ always @(posedge u_rack) begin
             end
         end
         STATE_R_DATA: begin
-            c_dout_buf[b_ofs] = u_din;
+            c_dout_buf[b_ofs] <= u_din;
             if (b_ofs==rwb_mask) begin
                 $display("MCTRL:Read Done %x",c_dout);
                 c_rack <= 1;
@@ -262,13 +253,6 @@ always @(posedge u_wack) begin
             end
             endcase
         end
-        //STATE_W_MASK: begin
-            //$display("MCTRL:wlen sent %d",rwb_mask);
-            //b_ofs = 0;
-            //u_dout = rwb_data_seg[b_ofs];
-            //state = STATE_W_DATA;
-            //u_qwe = 1;
-        //end
         STATE_W_DATA: begin
             $display("MCTRL:Write %d %x",b_ofs,u_dout);
             case (b_ofs)

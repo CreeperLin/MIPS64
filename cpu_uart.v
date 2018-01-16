@@ -36,27 +36,27 @@ clk_wiz_0 clk_wiz(clk, rst, locked, clk_in);
 `else
 assign clk = clk_in;
 `endif
-/*(*mark_debug = "true"*)*/wire[RPORT * `RW_E_L] co_re;
-/*(*mark_debug = "true"*)*/wire[WPORT * `RW_E_L] co_we;
+wire[RPORT * `RW_E_L] co_re;
+wire[WPORT * `RW_E_L] co_we;
 wire[RPORT * `RW_LEN_L] co_rlen;
 wire[WPORT * `RW_LEN_L] co_wlen;
 wire[RPORT * `C_DATA_L] co_din;
 wire[WPORT * `C_DATA_L] co_dout;
 wire[RPORT * `M_ADDR_L] co_raddr;
 wire[WPORT * `M_ADDR_L] co_waddr;
-/*(*mark_debug = "true"*)*/wire[RPORT-1:0] co_rack;
-/*(*mark_debug = "true"*)*/wire[WPORT-1:0] co_wack;
+wire[RPORT-1:0] co_rack;
+wire[WPORT-1:0] co_wack;
 
 wire[`C_DATA_L] data_in;
 wire[`C_DATA_L] data_out;
 wire[`M_ADDR_L] read_addr;
 wire[`M_ADDR_L] write_addr;
-/*(*mark_debug = "true"*)*/wire c_re, c_we;
+wire c_re, c_we;
 wire[`RW_LEN_L] c_rlen,c_wlen;
-/*(*mark_debug = "true"*)*/wire m_rack, m_wack;
+wire m_rack, m_wack;
 
 wire[`M_DATA_L] u_send, u_recv;
-/*(*mark_debug = "true"*)*/wire u_re, u_se, u_rack, u_sack, u_ra, u_sa;
+wire u_re, u_se, u_rack, u_sack, u_ra, u_sa;
 
 cpu_core core0(clk,rst,co_din[2*`C_DATA_L],co_dout[`C_DATA_L],
     co_raddr[2*`M_ADDR_L],co_waddr[`M_ADDR_L],

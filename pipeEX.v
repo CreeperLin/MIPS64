@@ -54,10 +54,7 @@ assign wb_idx_out = rd;
 
 assign EX_fwd_idx = (wb_e_in&&!rw_e_in) ? rd : 0;
 assign EX_fwd_val = ans;
-//assign jp_e_out = (br_e_in && ans[0]) || jp_e_in;
-//assign jp_pc = ans;
 assign bp_tag_out = pc_in[10-1:0];
-//assign bp_t_out = ans[0];
 
 reg[REG_SZ-1:0] alu_opr1,alu_opr2;
 reg[`ALUOP_L] alu_op;
@@ -76,14 +73,13 @@ task run_alu;
 input [`ALUOP_L] t_op;
 input [REG_SZ-1:0] t_opr1, t_opr2;
 input t_c;
-//output t_ans;
 begin
     alu_run = 0;
-    alu_opr1 = t_opr1;
-    alu_opr2 = t_opr2;
-    alu_c = t_c;
-    alu_op = t_op;
-    alu_run = 1;
+    alu_opr1 <= t_opr1;
+    alu_opr2 <= t_opr2;
+    alu_c <= t_c;
+    alu_op <= t_op;
+    alu_run <= 1;
 end
 endtask
 
@@ -96,12 +92,13 @@ always @(posedge clk or posedge rst) begin
         alu_op <= 0;
         alu_opr1 <= 0;
         alu_opr2 <= 0;
+        alu_run <= 0;
         alu_c <= 0;
         buf_re <= 0;
         buf_we <= 0;
         bp_we <= 0;
         bp_t_out <= 0;
-        state = STATE_IDLE;
+        state <= STATE_IDLE;
         MA_fi <= 0;
         MA_fv <= 0;
     end else begin
@@ -110,19 +107,17 @@ always @(posedge clk or posedge rst) begin
 end
 reg[REG_SZ-1:0] opr1,opr2;
 always @(posedge buf_avail) begin
-    buf_re = 1;
+    buf_re <= 1;
 end
 
 always @(posedge MA_ack) begin
-    MA_fi = MA_fwd_idx;
-    MA_fv = MA_fwd_val;
+    MA_fi <= MA_fwd_idx;
+    MA_fv <= MA_fwd_val;
     $display("EX:MA fwd %d %d",MA_fi,MA_fv);
 end
 
 always @(posedge buf_rack) begin
-    buf_re = 0;
-    opr1 = 0;
-    opr2 = 0;
+    buf_re <= 0;
     case (rs1)
         5'b0: opr1 = opr1_in;
         MA_fi: begin
@@ -139,64 +134,59 @@ always @(posedge buf_rack) begin
         end
         default: opr2 = opr2_in;
     endcase
-    MA_fi = 0;
+    MA_fi <= 0;
     $display("EX:%x alu_op:%d rd:%d opr1:%d opr2:%d val:%d c:%d ans:%d jp_e: %d jp_pc:%x",pc_in,op_in,rd,opr1,opr2,val_in,c_in,ans,jp_e_out,jp_pc);
     run_alu(op_in,opr1,opr2,c_in);
-    state = STATE_OPR_CAL;
+    state <= STATE_OPR_CAL;
 end
 
 always @(posedge alu_ack) begin
-    alu_run = 0;
+    alu_run <= 0;
     $display("ALU:%x op:%d A:%d B:%d c:%d Y:%d",pc_in,alu_op,alu_opr1,alu_opr2,alu_c,ans);
     case (state)
         STATE_IDLE: begin $display("EX:Idle");
         end
         STATE_OPR_CAL: begin
             if (br_e_in) begin
-                //buf_we = 1;
-                bp_t_out = ans[0];
+                bp_t_out <= ans[0];
                 if (ans[0]) begin
                     run_alu(`ALU_ADD,val_in,pc_in,1'b0);
-                    state = STATE_BADDR_CAL;
+                    state <= STATE_BADDR_CAL;
                 end else begin
-                    jp_pc = 0;
-                    jp_e_out = 1;
-                    bp_we = 1;
-                    buf_we = 1;
+                    jp_pc <= 0;
+                    jp_e_out <= 1;
+                    bp_we <= 1;
+                    buf_we <= 1;
                 end
             end else if (jp_e_in) begin
-                jp_pc = ans;
-                jp_e_out = 1;
+                jp_pc <= ans;
+                jp_e_out <= 1;
                 run_alu(`ALU_ADD,pc_in,val_in,1'b0);
-                state = STATE_JADDR_CAL;
+                state <= STATE_JADDR_CAL;
             end else begin
-                buf_we = 1;        
+                buf_we <= 1;        
             end
         end
         STATE_BADDR_CAL: begin
-            jp_pc = ans;
-            jp_e_out = 1;
-            bp_we = 1;
-            buf_we = 1;
+            jp_pc <= ans;
+            jp_e_out <= 1;
+            bp_we <= 1;
+            buf_we <= 1;
         end
         STATE_JADDR_CAL: begin
-            buf_we = 1;
+            buf_we <= 1;
         end
         default: $display("EX:ERROR unknown state");
     endcase
 end
 
 always @(posedge buf_wack) begin
-    buf_we = 0;
-    buf_re = buf_avail ? 1 : 0;
+    buf_we <= 0;
+    buf_re <= buf_avail ? 1 : 0;
 end
 
 always @(posedge jp_ack) begin
-    jp_e_out = 0;
+    jp_e_out <= 0;
 end
 
-//always @(negedge buf_avail) begin
-//end
-//always @(posedge buf_ack) begin
-//end
 endmodule

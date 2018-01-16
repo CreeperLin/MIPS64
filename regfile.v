@@ -1,4 +1,3 @@
-`define SP_INIT     32'h00010000
 module regfile
 #(
     parameter REG_SZ = 32,
@@ -28,31 +27,30 @@ endgenerate
 integer t;
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        rack = 0;
-        wack = 0;
+        rack <= 0;
+        wack <= 0;
         for (t=0;t<32;t=t+1) begin
-            data[t] = 0;
+            data[t] <= 0;
         end
-        //data[2] = 32'h00010000; //sp
-        dout = 0;
+        dout <= 0;
     end else begin
     end
 end
 
 always @(posedge re) begin
-    dout = gpr[r_idx];
-    rack = 1;
+    dout <= gpr[r_idx];
+    rack <= 1;
     $display("REG:Read idx:%d val:%d",r_idx,dout);
 end
 always @(posedge we) begin
-    data[w_idx] = din;
-    wack = 1;
+    data[w_idx] <= din;
+    wack <= 1;
     $display("REG:Write idx:%d val:%d",w_idx,din);
 end
 always @(negedge re) begin
-    rack = 0;
+    rack <= 0;
 end
 always @(negedge we) begin
-    wack = 0;
+    wack <= 0;
 end
 endmodule

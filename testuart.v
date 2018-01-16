@@ -25,8 +25,5 @@ initial begin
     run = 1;
     //repeat(10000) #1 clk=!clk;
     forever #1 clk=!clk;
-    //#50000;
-    //////$display("CPU TIMEOUT");
-    //$finish;
 end
 endmodule

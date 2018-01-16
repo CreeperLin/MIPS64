@@ -46,16 +46,13 @@ assign MA_fwd_val = wb_out;
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        buf_re = 0;
-        buf_we =0;
-        co_we = 0;
-        co_re = 0;
-        co_rlen = 0;
-        co_wlen = 0;
-        state = STATE_IDLE;
-        //stg_ack = 0;
-        //co_wlen <= 0;
-        //co_rlen <= 0;
+        buf_re <= 0;
+        buf_we <= 0;
+        co_we <= 0;
+        co_re <= 0;
+        co_rlen <= 0;
+        co_wlen <= 0;
+        state <= STATE_IDLE;
     end else begin
 
     end
@@ -63,36 +60,36 @@ end
 
 always @(posedge buf_avail) begin
     if (state==STATE_IDLE)
-        buf_re = 1;
+        buf_re <= 1;
 end
 
 always @(posedge buf_rack) begin
-    buf_re = 0;
+    buf_re <= 0;
     case (rw_e)
     2'b10: begin
-        co_rlen = rw_len;
-        m_raddr = ex_ans;
-        co_re = 1;
-        state = STATE_R;
+        co_rlen <= rw_len;
+        m_raddr <= ex_ans;
+        co_re <= 1;
+        state <= STATE_R;
     end
     2'b11: begin
-        co_rlen = rw_len;
-        m_raddr = ex_ans;
-        co_re = 1;
-        state = STATE_RU;       
+        co_rlen <= rw_len;
+        m_raddr <= ex_ans;
+        co_re <= 1;
+        state <= STATE_RU;       
     end
     2'b01: begin
-        co_wlen = rw_len;
-        m_waddr = ex_ans;
-        mem_out = ex_din;
-        co_we = 1;
-        state = STATE_W;
+        co_wlen <= rw_len;
+        m_waddr <= ex_ans;
+        mem_out <= ex_din;
+        co_we <= 1;
+        state <= STATE_W;
     end
     2'b00: begin
-        wb_out = ex_ans;
+        wb_out <= ex_ans;
+        state <= STATE_IDLE;
+        buf_we <= 1;
         $display("MA:None");
-        state = STATE_IDLE;
-        buf_we = 1;
     end
     default: $display("MA:ERROR");
     endcase
@@ -100,8 +97,8 @@ end
 
 always @(posedge buf_wack) begin
     $display("MA:Fwd %d %d",MA_fwd_idx,MA_fwd_val);
-    buf_we = 0;
-    buf_re = buf_avail ? 1 : 0;
+    buf_we <= 0;
+    buf_re <= buf_avail ? 1 : 0;
 end
 
 always @(posedge co_rack) begin
@@ -117,31 +114,23 @@ always @(posedge co_rack) begin
         end
         STATE_RU: begin
         wb_out = mem_in;
-        //case (rw_len)
-            //2'b00: wb_out = {24'b0, mem_in[7:0]};
-            //2'b01: wb_out = {16'b0, mem_in[15:0]};
-            //2'b11: wb_out = mem_in;
-            //default: $display("MA:Error");
-        //endcase
         $display("MA:Read Unsigned m_raddr:%x mem_in:%d wb_out:%d",m_raddr,mem_in,wb_out);
         end
         default: $display("MA:ERROR rack");
     endcase
-    co_re = 0;
-    state = STATE_IDLE;
-    buf_we = 1;
-    //buf_re = buf_avail ? 1 : 0;
+    co_re <= 0;
+    state <= STATE_IDLE;
+    buf_we <= 1;
 end
 always @(posedge co_wack) begin
-    co_we = 0;
+    co_we <= 0;
     case (state)
         STATE_W: begin
             $display("MA:Write m_waddr:%x mem_out:%d",m_waddr,mem_out);
         end
         default: $display("MA:ERROR wack");
     endcase
-    state = STATE_IDLE;
-    buf_we = 1;
-    //buf_re = buf_avail ? 1 : 0;
+    state <= STATE_IDLE;
+    buf_we <= 1;
 end
 endmodule

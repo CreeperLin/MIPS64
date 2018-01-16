@@ -91,10 +91,7 @@ module uart_comm
 			recv_parity <= 0;
 			recv_counter <= 0;
 			recv_clock <= 0;
-            //recv_ack = 0;
 		end else begin
-            //recv_ack = 0;
-			//recv_write_flag <= 0;
 			if(recv_clock) begin
 				if(recv_counter == SAMPLE_INTERVAL - 1)
 					recv_counter <= 0;
@@ -139,7 +136,6 @@ module uart_comm
                     $display("UART:%0d Received %b",ID,recv_write_data);
 					recv_status <= STATUS_IDLE;
 					recv_clock <= 0;
-                    //recv_ack = 1;
 				end
 				endcase
 			end
@@ -175,17 +171,15 @@ module uart_comm
 			send_parity <= 0;
 			tosend <= 0;
 			Tx <= 1;
-            //send_ack = 0;
 		end else begin
 			//send_read_flag <= 0;
-			//send_ack = 0;	
 			if(counter == 0) begin
 				case(send_status)
 				STATUS_IDLE:begin
 					//if(!send_empty) begin
 					if(sbuf_a) begin
 						//send_read_data_buf <= send_read_data;
-						send_read_flag = 1;
+						send_read_flag <= 1;
 						Tx <= 0;
                         send_status <= STATUS_DATA;
 						send_bit <= 0;
@@ -209,10 +203,9 @@ module uart_comm
 				
 				STATUS_END:begin
                     $display("UART:%0d Sent %b",ID,send_read_data_buf);
-                    //send_ack = 1;
 					Tx <= 1;
 					send_status <= STATUS_IDLE;
-					tosend = 0;
+					tosend <= 0;
 				end
 				endcase
 			end
